@@ -1,8 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Mic, MicOff, Volume2, Square } from 'lucide-react';
+import { Mic, Square } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface VoiceInterfaceProps {
   onVoiceCommand: (command: string) => void;
@@ -18,6 +19,24 @@ export const VoiceInterface: React.FC<VoiceInterfaceProps> = ({
   const [transcript, setTranscript] = useState('');
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+
+  const blobToBase64 = (blob: Blob) =>
+    new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const result = reader.result;
+        if (typeof result === 'string') {
+          const base64 = result.split(',')[1];
+          if (base64) {
+            resolve(base64);
+            return;
+          }
+        }
+        reject(new Error('Audio konnte nicht konvertiert werden'));
+      };
+      reader.onerror = () => reject(new Error('Audio konnte nicht gelesen werden'));
+      reader.readAsDataURL(blob);
+    });
 
   const startListening = async () => {
     try {
@@ -79,25 +98,17 @@ export const VoiceInterface: React.FC<VoiceInterfaceProps> = ({
 
   const processAudio = async (audioBlob: Blob) => {
     try {
-      // Convert blob to base64
-      const arrayBuffer = await audioBlob.arrayBuffer();
-      const base64Audio = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+      const base64Audio = await blobToBase64(audioBlob);
 
-      // Send to Supabase Edge Function for speech-to-text
-      const response = await fetch(`https://bqwfcixtbnodxuoixxkk.supabase.co/functions/v1/speech-to-text`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJxd2ZjaXh0Ym5vZHh1b2l4eGtrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4NzMzODgsImV4cCI6MjA3NDQ0OTM4OH0._VAHEgxoMlLCIjxuXsiUpcplXxdbnvIqJYkyjlXHBkQ`
-        },
-        body: JSON.stringify({ audio: base64Audio }),
+      const { data, error } = await supabase.functions.invoke<{ text: string }>('speech-to-text', {
+        body: { audio: base64Audio },
       });
 
-      if (!response.ok) {
-        throw new Error('Speech-to-text failed');
+      if (error) {
+        throw error;
       }
 
-      const { text } = await response.json();
+      const text = data?.text ?? '';
       setTranscript(text);
       
       if (text.trim()) {

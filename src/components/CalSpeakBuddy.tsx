@@ -88,20 +88,17 @@ const CalSpeakBuddy: React.FC = () => {
     setIsProcessingVoice(true);
     
     try {
-      const response = await fetch(`https://bqwfcixtbnodxuoixxkk.supabase.co/functions/v1/voice-commands`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJxd2ZjaXh0Ym5vZHh1b2l4eGtrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4NzMzODgsImV4cCI6MjA3NDQ0OTM4OH0._VAHEgxoMlLCIjxuXsiUpcplXxdbnvIqJYkyjlXHBkQ`
-        },
-        body: JSON.stringify({ command }),
+      const { data: result, error } = await supabase.functions.invoke<VoiceCommandResult>('voice-commands', {
+        body: { command }
       });
 
-      if (!response.ok) {
-        throw new Error('Voice command processing failed');
+      if (error) {
+        throw error;
       }
 
-      const result: VoiceCommandResult = await response.json();
+      if (!result) {
+        throw new Error('Leere Antwort vom Sprachdienst erhalten');
+      }
       
       if (result.success) {
         if (result.needsConfirmation) {
@@ -114,7 +111,7 @@ const CalSpeakBuddy: React.FC = () => {
             type: result.deletedMeeting ? 'warning' : 'success',
             action: () => {
               loadMeetings(); // Refresh meetings
-              setConfirmation({ ...confirmation, isVisible: false });
+              setConfirmation(prev => ({ ...prev, isVisible: false }));
             }
           });
         } else {
@@ -226,7 +223,7 @@ const CalSpeakBuddy: React.FC = () => {
             variant: "destructive",
           });
         }
-        setConfirmation({ ...confirmation, isVisible: false });
+        setConfirmation(prev => ({ ...prev, isVisible: false }));
       }
     });
   };
