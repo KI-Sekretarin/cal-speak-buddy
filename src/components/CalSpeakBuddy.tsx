@@ -1,473 +1,247 @@
-import React, { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import { Button } from '@/components/ui/button';
+import React, { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { VoiceInterface } from '@/components/VoiceInterface';
-import { MeetingCard, type Meeting } from '@/components/MeetingCard';
-import { MeetingForm } from '@/components/MeetingForm';
-import { ConfirmationDialog } from '@/components/ConfirmationDialog';
-import { Calendar, Plus, Mic, Bot, Clock, Users, Sparkles } from 'lucide-react';
-import { format, isToday, isTomorrow, addDays } from 'date-fns';
-import { de } from 'date-fns/locale';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
+import { Mic, Square, Upload } from 'lucide-react';
 
-interface VoiceCommandResult {
-  success: boolean;
-  message: string;
-  meeting?: Meeting;
-  meetings?: Meeting[];
-  deletedMeeting?: Meeting;
-  needsConfirmation?: boolean;
-}
-
-interface ConfirmationState {
-  isVisible: boolean;
-  title: string;
-  message: string;
-  details?: any;
-  action?: () => void;
-  type?: 'success' | 'warning' | 'danger' | 'info';
-}
-
-const CalSpeakBuddy: React.FC = () => {
+const CalSpeakBuddy = () => {
   const { toast } = useToast();
-  const [meetings, setMeetings] = useState<Meeting[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isProcessingVoice, setIsProcessingVoice] = useState(false);
-  const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
-  const [isFormVisible, setIsFormVisible] = useState(false);
-  const [confirmation, setConfirmation] = useState<ConfirmationState>({
-    isVisible: false,
-    title: '',
-    message: ''
-  });
+  const [isRecording, setIsRecording] = useState(false);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
 
-  // Load meetings on component mount
-  useEffect(() => {
-    loadMeetings();
-  }, []);
-
-  const loadMeetings = async () => {
-    try {
-      setIsLoading(true);
-      const { data, error } = await supabase
-        .from('meetings')
-        .select('*')
-        .gte('start_time', new Date().toISOString())
-        .order('start_time', { ascending: true });
-
-      if (error) throw error;
-      
-      // Transform the data to match our Meeting interface
-      const transformedMeetings: Meeting[] = (data || []).map(meeting => ({
-        ...meeting,
-        description: meeting.description || undefined,
-        location: meeting.location || undefined,
-        attendees: Array.isArray(meeting.attendees) 
-          ? meeting.attendees.filter((a): a is { name: string; email?: string } => 
-              typeof a === 'object' && a !== null && 'name' in a && typeof a.name === 'string'
-            )
-          : []
-      }));
-      
-      setMeetings(transformedMeetings);
-    } catch (error) {
-      console.error('Error loading meetings:', error);
-      toast({
-        title: "Fehler",
-        description: "Meetings konnten nicht geladen werden",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleVoiceCommand = async (command: string) => {
-    setIsProcessingVoice(true);
+  const convertToWav = async (webmBlob: Blob): Promise<Blob> => {
+    const audioContext = new AudioContext();
+    const arrayBuffer = await webmBlob.arrayBuffer();
+    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
     
+    const wavBuffer = audioBufferToWav(audioBuffer);
+    return new Blob([wavBuffer], { type: 'audio/wav' });
+  };
+
+  const audioBufferToWav = (buffer: AudioBuffer): ArrayBuffer => {
+    const length = buffer.length * buffer.numberOfChannels * 2 + 44;
+    const arrayBuffer = new ArrayBuffer(length);
+    const view = new DataView(arrayBuffer);
+    const channels: Float32Array[] = [];
+    let offset = 0;
+    let pos = 0;
+
+    // Write WAV header
+    const setUint16 = (data: number) => {
+      view.setUint16(pos, data, true);
+      pos += 2;
+    };
+    const setUint32 = (data: number) => {
+      view.setUint32(pos, data, true);
+      pos += 4;
+    };
+
+    // "RIFF" chunk descriptor
+    setUint32(0x46464952); // "RIFF"
+    setUint32(length - 8); // file length - 8
+    setUint32(0x45564157); // "WAVE"
+
+    // "fmt " sub-chunk
+    setUint32(0x20746d66); // "fmt "
+    setUint32(16); // SubChunk1Size
+    setUint16(1); // AudioFormat (PCM)
+    setUint16(buffer.numberOfChannels);
+    setUint32(buffer.sampleRate);
+    setUint32(buffer.sampleRate * 2 * buffer.numberOfChannels); // byte rate
+    setUint16(buffer.numberOfChannels * 2); // block align
+    setUint16(16); // bits per sample
+
+    // "data" sub-chunk
+    setUint32(0x61746164); // "data"
+    setUint32(length - pos - 4); // SubChunk2Size
+
+    // Write interleaved data
+    for (let i = 0; i < buffer.numberOfChannels; i++) {
+      channels.push(buffer.getChannelData(i));
+    }
+
+    while (pos < length) {
+      for (let i = 0; i < buffer.numberOfChannels; i++) {
+        let sample = Math.max(-1, Math.min(1, channels[i][offset]));
+        sample = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+        view.setInt16(pos, sample, true);
+        pos += 2;
+      }
+      offset++;
+    }
+
+    return arrayBuffer;
+  };
+
+  const startRecording = async () => {
     try {
-      const { data: result, error } = await supabase.functions.invoke<VoiceCommandResult>('voice-commands', {
-        body: { command }
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          sampleRate: 44100,
+          channelCount: 1,
+          echoCancellation: true,
+          noiseSuppression: true,
+        }
+      });
+      
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'audio/webm;codecs=opus'
+      });
+      
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        const webmBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const wavBlob = await convertToWav(webmBlob);
+        setAudioBlob(wavBlob);
+        
+        stream.getTracks().forEach(track => track.stop());
+        
+        toast({
+          title: "Aufnahme gespeichert",
+          description: "Audio als WAV-Datei bereit zum Hochladen",
+        });
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+      setAudioBlob(null);
+      
+      toast({
+        title: "Aufnahme gestartet",
+        description: "Sprechen Sie jetzt...",
+      });
+    } catch (error) {
+      console.error('Error accessing microphone:', error);
+      toast({
+        title: "Mikrofon-Fehler",
+        description: "Zugriff auf Mikrofon verweigert",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+  };
+
+  const uploadAudio = async () => {
+    if (!audioBlob) return;
+
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', audioBlob, 'recording.wav');
+
+      const response = await fetch('https://kisekretaerin.app.n8n.cloud/webhook-test/f0448e5d-e777-4286-ab19-8afee6bb5cfc', {
+        method: 'POST',
+        body: formData,
       });
 
-      if (error) {
-        throw error;
+      if (!response.ok) {
+        throw new Error('Upload fehlgeschlagen');
       }
 
-      if (!result) {
-        throw new Error('Leere Antwort vom Sprachdienst erhalten');
-      }
-      
-      if (result.success) {
-        if (result.needsConfirmation) {
-          // Show confirmation dialog
-          setConfirmation({
-            isVisible: true,
-            title: result.meeting ? "Meeting erstellt" : result.deletedMeeting ? "Meeting gelöscht" : "Aktion ausgeführt",
-            message: result.message,
-            details: result.meeting ? { meeting: result.meeting } : result.deletedMeeting ? { meeting: result.deletedMeeting } : null,
-            type: result.deletedMeeting ? 'warning' : 'success',
-            action: () => {
-              loadMeetings(); // Refresh meetings
-              setConfirmation(prev => ({ ...prev, isVisible: false }));
-            }
-          });
-        } else {
-          toast({
-            title: "Erfolgreich",
-            description: result.message,
-          });
-          if (result.meetings) {
-            setMeetings(result.meetings);
-          }
-        }
-      } else {
-        toast({
-          title: "Befehl nicht verstanden",
-          description: result.message,
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error('Error processing voice command:', error);
       toast({
-        title: "Fehler",
-        description: "Sprachbefehl konnte nicht verarbeitet werden",
+        title: "Upload erfolgreich",
+        description: "Audio wurde zum Webhook gesendet",
+      });
+      
+      setAudioBlob(null);
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast({
+        title: "Upload-Fehler",
+        description: error instanceof Error ? error.message : "Unbekannter Fehler",
         variant: "destructive",
       });
     } finally {
-      setIsProcessingVoice(false);
+      setIsUploading(false);
     }
-  };
-
-  const handleSaveMeeting = async (meetingData: Partial<Meeting>) => {
-    try {
-      if (selectedMeeting) {
-        // Update existing meeting
-        const { error } = await supabase
-          .from('meetings')
-          .update(meetingData)
-          .eq('id', selectedMeeting.id);
-
-        if (error) throw error;
-        
-        toast({
-          title: "Meeting aktualisiert",
-          description: "Das Meeting wurde erfolgreich gespeichert",
-        });
-      } else {
-        // Create new meeting - prepare data for Supabase
-        const insertData = {
-          title: meetingData.title || '',
-          description: meetingData.description || null,
-          start_time: meetingData.start_time || '',
-          end_time: meetingData.end_time || '',
-          location: meetingData.location || null,
-          attendees: meetingData.attendees || [],
-          status: 'scheduled' as const
-        };
-
-        const { error } = await supabase
-          .from('meetings')
-          .insert(insertData);
-
-        if (error) throw error;
-        
-        toast({
-          title: "Meeting erstellt",
-          description: "Das Meeting wurde erfolgreich erstellt",
-        });
-      }
-      
-      setIsFormVisible(false);
-      setSelectedMeeting(null);
-      loadMeetings();
-    } catch (error) {
-      console.error('Error saving meeting:', error);
-      toast({
-        title: "Fehler",
-        description: "Meeting konnte nicht gespeichert werden",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleDeleteMeeting = async (id: string) => {
-    setConfirmation({
-      isVisible: true,
-      title: "Meeting löschen",
-      message: "Möchten Sie dieses Meeting wirklich löschen?",
-      type: 'danger',
-      action: async () => {
-        try {
-          const { error } = await supabase
-            .from('meetings')
-            .delete()
-            .eq('id', id);
-
-          if (error) throw error;
-          
-          toast({
-            title: "Meeting gelöscht",
-            description: "Das Meeting wurde erfolgreich gelöscht",
-          });
-          
-          loadMeetings();
-        } catch (error) {
-          console.error('Error deleting meeting:', error);
-          toast({
-            title: "Fehler",
-            description: "Meeting konnte nicht gelöscht werden",
-            variant: "destructive",
-          });
-        }
-        setConfirmation(prev => ({ ...prev, isVisible: false }));
-      }
-    });
-  };
-
-  const handleStatusChange = async (id: string, status: Meeting['status']) => {
-    try {
-      const { error } = await supabase
-        .from('meetings')
-        .update({ status })
-        .eq('id', id);
-
-      if (error) throw error;
-      
-      toast({
-        title: "Status aktualisiert",
-        description: `Meeting-Status wurde zu "${status}" geändert`,
-      });
-      
-      loadMeetings();
-    } catch (error) {
-      console.error('Error updating status:', error);
-      toast({
-        title: "Fehler",
-        description: "Status konnte nicht aktualisiert werden",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Group meetings by date
-  const groupedMeetings = meetings.reduce((groups, meeting) => {
-    const date = format(new Date(meeting.start_time), 'yyyy-MM-dd');
-    if (!groups[date]) {
-      groups[date] = [];
-    }
-    groups[date].push(meeting);
-    return groups;
-  }, {} as Record<string, Meeting[]>);
-
-  const getDateLabel = (dateStr: string) => {
-    const date = new Date(dateStr);
-    if (isToday(date)) return 'Heute';
-    if (isTomorrow(date)) return 'Morgen';
-    return format(date, 'EEEE, dd.MM.yyyy', { locale: de });
   };
 
   return (
-    <div className="min-h-screen bg-gradient-subtle">
-      {/* Header */}
-      <header className="bg-white/80 backdrop-blur-md border-b border-border/50 sticky top-0 z-40">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-primary rounded-xl flex items-center justify-center shadow-glow">
-                <Bot className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                  Cal-Speak Buddy
-                </h1>
-                <p className="text-sm text-muted-foreground">
-                  Ihre KI-Sekretärin für intelligente Kalenderverwaltung
-                </p>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-3">
-              <Badge variant="outline" className="flex items-center gap-1">
-                <Sparkles className="h-3 w-3" />
-                KI-Powered
-              </Badge>
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md shadow-elegant">
+        <CardHeader>
+          <CardTitle className="text-2xl text-center">Audio-Recorder</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="flex flex-col items-center gap-4">
+            {!isRecording ? (
               <Button
-                variant="hero"
-                size="lg"
-                onClick={() => {
-                  setSelectedMeeting(null);
-                  setIsFormVisible(true);
-                }}
-                className="flex items-center gap-2"
+                variant="voice"
+                size="voice-large"
+                onClick={startRecording}
+                disabled={isUploading}
+                className="relative group"
               >
-                <Plus className="h-4 w-4" />
-                Meeting erstellen
+                <Mic className="h-8 w-8" />
+                <div className="absolute inset-0 bg-white/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+              </Button>
+            ) : (
+              <Button
+                variant="voice-listening"
+                size="voice-large"
+                onClick={stopRecording}
+                className="relative"
+              >
+                <Square className="h-6 w-6" />
+                <div className="absolute inset-0 border-2 border-voice-listening rounded-full animate-ping" />
+              </Button>
+            )}
+
+            <p className="text-center font-semibold">
+              {isRecording 
+                ? "Aufnahme läuft..." 
+                : audioBlob 
+                  ? "Aufnahme bereit" 
+                  : "Klicken Sie, um aufzunehmen"
+              }
+            </p>
+          </div>
+
+          {audioBlob && (
+            <div className="space-y-4">
+              <audio 
+                controls 
+                src={URL.createObjectURL(audioBlob)}
+                className="w-full"
+              />
+              
+              <Button
+                onClick={uploadAudio}
+                disabled={isUploading}
+                className="w-full"
+                size="lg"
+              >
+                <Upload className="h-5 w-5 mr-2" />
+                {isUploading ? "Wird hochgeladen..." : "Zum Webhook hochladen"}
               </Button>
             </div>
+          )}
+
+          <div className="text-xs text-muted-foreground text-center space-y-1 pt-4 border-t">
+            <p>Webhook URL:</p>
+            <p className="font-mono text-[10px] break-all">
+              kisekretaerin.app.n8n.cloud/webhook-test/...
+            </p>
           </div>
-        </div>
-      </header>
-
-      <main className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Voice Interface */}
-          <div className="lg:col-span-1">
-            <div className="sticky top-24">
-              <Card className="mb-6 shadow-elegant">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Mic className="h-5 w-5 text-voice-active" />
-                    Sprachsteuerung
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <VoiceInterface
-                    onVoiceCommand={handleVoiceCommand}
-                    isProcessing={isProcessingVoice}
-                  />
-                </CardContent>
-              </Card>
-
-              {/* Quick Stats */}
-              <Card className="shadow-elegant">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Calendar className="h-5 w-5" />
-                    Übersicht
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Anstehende Termine</span>
-                    <Badge variant="secondary">{meetings.length}</Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Heute</span>
-                    <Badge variant="default">
-                      {meetings.filter(m => isToday(new Date(m.start_time))).length}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Diese Woche</span>
-                    <Badge variant="outline">
-                      {meetings.filter(m => {
-                        const meetingDate = new Date(m.start_time);
-                        const nextWeek = addDays(new Date(), 7);
-                        return meetingDate <= nextWeek;
-                      }).length}
-                    </Badge>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-
-          {/* Meetings List */}
-          <div className="lg:col-span-2">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-semibold flex items-center gap-2">
-                <Calendar className="h-6 w-6" />
-                Anstehende Meetings
-              </h2>
-              {isLoading && (
-                <Badge variant="secondary" className="animate-pulse">
-                  Lädt...
-                </Badge>
-              )}
-            </div>
-
-            {isLoading ? (
-              <div className="space-y-4">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <Card key={i} className="animate-pulse">
-                    <CardContent className="p-6">
-                      <div className="h-4 bg-muted rounded w-3/4 mb-3"></div>
-                      <div className="h-3 bg-muted rounded w-1/2"></div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            ) : Object.keys(groupedMeetings).length === 0 ? (
-              <Card className="text-center py-12">
-                <CardContent>
-                  <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">Keine anstehenden Meetings</h3>
-                  <p className="text-muted-foreground mb-4">
-                    Erstellen Sie Ihr erstes Meeting oder verwenden Sie Sprachbefehle
-                  </p>
-                  <Button
-                    variant="hero"
-                    onClick={() => {
-                      setSelectedMeeting(null);
-                      setIsFormVisible(true);
-                    }}
-                  >
-                    Meeting erstellen
-                  </Button>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-8">
-                {Object.entries(groupedMeetings).map(([date, dateMeetings]) => (
-                  <div key={date}>
-                    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                      <Clock className="h-5 w-5 text-primary" />
-                      {getDateLabel(date)}
-                      <Badge variant="outline" className="text-xs">
-                        {dateMeetings.length} {dateMeetings.length === 1 ? 'Termin' : 'Termine'}
-                      </Badge>
-                    </h3>
-                    <div className="grid grid-cols-1 gap-4">
-                      {dateMeetings.map((meeting) => (
-                        <MeetingCard
-                          key={meeting.id}
-                          meeting={meeting}
-                          onEdit={(meeting) => {
-                            setSelectedMeeting(meeting);
-                            setIsFormVisible(true);
-                          }}
-                          onDelete={handleDeleteMeeting}
-                          onStatusChange={handleStatusChange}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </main>
-
-      {/* Meeting Form Modal */}
-      <MeetingForm
-        meeting={selectedMeeting || undefined}
-        isVisible={isFormVisible}
-        onSave={handleSaveMeeting}
-        onCancel={() => {
-          setIsFormVisible(false);
-          setSelectedMeeting(null);
-        }}
-      />
-
-      {/* Confirmation Dialog */}
-      <ConfirmationDialog
-        isVisible={confirmation.isVisible}
-        title={confirmation.title}
-        message={confirmation.message}
-        details={confirmation.details}
-        type={confirmation.type}
-        onConfirm={() => {
-          confirmation.action?.();
-        }}
-        onCancel={() => {
-          setConfirmation({ ...confirmation, isVisible: false });
-        }}
-      />
+        </CardContent>
+      </Card>
     </div>
   );
 };
