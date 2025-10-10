@@ -9,6 +9,7 @@ const CalSpeakBuddy = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [transcription, setTranscription] = useState<string>('');
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
 
@@ -155,9 +156,12 @@ const CalSpeakBuddy = () => {
         throw new Error('Upload fehlgeschlagen');
       }
 
+      const result = await response.text();
+      setTranscription(result);
+
       toast({
-        title: "Upload erfolgreich",
-        description: "Audio wurde zum Webhook gesendet",
+        title: "Transkription erfolgreich",
+        description: "Audio wurde verarbeitet",
       });
       
       setAudioBlob(null);
@@ -174,74 +178,110 @@ const CalSpeakBuddy = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md shadow-elegant">
-        <CardHeader>
-          <CardTitle className="text-2xl text-center">Audio-Recorder</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex flex-col items-center gap-4">
-            {!isRecording ? (
-              <Button
-                variant="voice"
-                size="voice-large"
-                onClick={startRecording}
-                disabled={isUploading}
-                className="relative group"
-              >
-                <Mic className="h-8 w-8" />
-                <div className="absolute inset-0 bg-white/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
-              </Button>
-            ) : (
-              <Button
-                variant="voice-listening"
-                size="voice-large"
-                onClick={stopRecording}
-                className="relative"
-              >
-                <Square className="h-6 w-6" />
-                <div className="absolute inset-0 border-2 border-voice-listening rounded-full animate-ping" />
-              </Button>
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Animated background elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 -left-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-1/4 -right-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+      </div>
+
+      <div className="w-full max-w-md relative z-10">
+        {/* Main Card with Glassmorphism */}
+        <div className="backdrop-blur-xl bg-white/5 rounded-3xl border border-white/10 shadow-2xl overflow-hidden">
+          <div className="p-8 space-y-8">
+            {/* Header */}
+            <div className="text-center space-y-2">
+              <h1 className="text-3xl font-bold text-white">Voice Recorder</h1>
+              <p className="text-white/60 text-sm">Aufnahme starten und transkribieren</p>
+            </div>
+
+            {/* Recording Interface */}
+            <div className="flex flex-col items-center gap-6">
+              {!isRecording ? (
+                <button
+                  onClick={startRecording}
+                  disabled={isUploading}
+                  className="relative group"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full blur-xl opacity-75 group-hover:opacity-100 transition-opacity" />
+                  <div className="relative w-20 h-20 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center transform transition-transform group-hover:scale-105 group-active:scale-95">
+                    <Mic className="h-10 w-10 text-white" />
+                  </div>
+                </button>
+              ) : (
+                <button
+                  onClick={stopRecording}
+                  className="relative group"
+                >
+                  <div className="absolute inset-0 bg-red-500 rounded-full blur-xl opacity-75 animate-pulse" />
+                  <div className="relative w-20 h-20 bg-gradient-to-br from-red-500 to-pink-500 rounded-full flex items-center justify-center transform transition-transform group-hover:scale-105">
+                    <Square className="h-8 w-8 text-white fill-white" />
+                  </div>
+                </button>
+              )}
+
+              <p className="text-white/80 font-medium text-lg">
+                {isRecording 
+                  ? "Aufnahme läuft..." 
+                  : audioBlob 
+                    ? "Aufnahme bereit" 
+                    : "Zum Starten klicken"
+                }
+              </p>
+            </div>
+
+            {/* Audio Preview & Upload */}
+            {audioBlob && (
+              <div className="space-y-4 animate-fade-in">
+                <div className="backdrop-blur-sm bg-white/5 rounded-2xl p-4 border border-white/10">
+                  <audio 
+                    controls 
+                    src={URL.createObjectURL(audioBlob)}
+                    className="w-full [&::-webkit-media-controls-panel]:bg-white/10 [&::-webkit-media-controls-panel]:rounded-lg"
+                  />
+                </div>
+                
+                <button
+                  onClick={uploadAudio}
+                  disabled={isUploading}
+                  className="w-full relative group overflow-hidden rounded-2xl"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-blue-500 transition-transform group-hover:scale-105" />
+                  <div className="relative px-6 py-4 flex items-center justify-center gap-2 text-white font-semibold">
+                    <Upload className="h-5 w-5" />
+                    {isUploading ? "Wird hochgeladen..." : "Transkribieren"}
+                  </div>
+                </button>
+              </div>
             )}
 
-            <p className="text-center font-semibold">
-              {isRecording 
-                ? "Aufnahme läuft..." 
-                : audioBlob 
-                  ? "Aufnahme bereit" 
-                  : "Klicken Sie, um aufzunehmen"
-              }
-            </p>
+            {/* Transcription Result */}
+            {transcription && (
+              <div className="space-y-3 animate-fade-in">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-white font-semibold">Transkription</h3>
+                  <button
+                    onClick={() => setTranscription('')}
+                    className="text-white/60 hover:text-white/80 text-sm transition-colors"
+                  >
+                    Löschen
+                  </button>
+                </div>
+                <div className="backdrop-blur-sm bg-white/5 rounded-2xl p-6 border border-white/10">
+                  <p className="text-white/90 leading-relaxed whitespace-pre-wrap">{transcription}</p>
+                </div>
+              </div>
+            )}
           </div>
 
-          {audioBlob && (
-            <div className="space-y-4">
-              <audio 
-                controls 
-                src={URL.createObjectURL(audioBlob)}
-                className="w-full"
-              />
-              
-              <Button
-                onClick={uploadAudio}
-                disabled={isUploading}
-                className="w-full"
-                size="lg"
-              >
-                <Upload className="h-5 w-5 mr-2" />
-                {isUploading ? "Wird hochgeladen..." : "Zum Webhook hochladen"}
-              </Button>
-            </div>
-          )}
-
-          <div className="text-xs text-muted-foreground text-center space-y-1 pt-4 border-t">
-            <p>Webhook URL:</p>
-            <p className="font-mono text-[10px] break-all">
-              kisekretaerin.app.n8n.cloud/webhook-test/audio-to-transcribe
+          {/* Footer */}
+          <div className="px-8 py-4 bg-white/5 border-t border-white/10">
+            <p className="text-white/40 text-xs text-center font-mono">
+              kisekretaerin.app.n8n.cloud
             </p>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 };
