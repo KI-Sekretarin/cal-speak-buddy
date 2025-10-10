@@ -146,7 +146,7 @@ const CalSpeakBuddy = () => {
       const formData = new FormData();
       formData.append('file', audioBlob, 'recording.wav');
 
-      const response = await fetch('https://kisekretaerin.app.n8n.cloud/webhook-test/f0448e5d-e777-4286-ab19-8afee6bb5cfc', {
+      const response = await fetch('https://kisekretaerin.app.n8n.cloud/webhook-test/audio-to-transcribe', {
         method: 'POST',
         body: formData,
       });
@@ -237,7 +237,7 @@ const CalSpeakBuddy = () => {
           <div className="text-xs text-muted-foreground text-center space-y-1 pt-4 border-t">
             <p>Webhook URL:</p>
             <p className="font-mono text-[10px] break-all">
-              kisekretaerin.app.n8n.cloud/webhook-test/...
+              kisekretaerin.app.n8n.cloud/webhook-test/audio-to-transcribe
             </p>
           </div>
         </CardContent>
