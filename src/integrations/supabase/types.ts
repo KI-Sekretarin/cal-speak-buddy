@@ -44,6 +44,80 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_responses: {
+        Row: {
+          created_at: string
+          id: string
+          inquiry_id: string
+          is_approved: boolean
+          suggested_response: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          inquiry_id: string
+          is_approved?: boolean
+          suggested_response: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          inquiry_id?: string
+          is_approved?: boolean
+          suggested_response?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_responses_inquiry_id_fkey"
+            columns: ["inquiry_id"]
+            isOneToOne: false
+            referencedRelation: "inquiries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inquiries: {
+        Row: {
+          ai_category: string | null
+          ai_response: string | null
+          category: Database["public"]["Enums"]["inquiry_category"]
+          created_at: string
+          email: string
+          id: string
+          message: string
+          name: string
+          status: Database["public"]["Enums"]["inquiry_status"]
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          ai_category?: string | null
+          ai_response?: string | null
+          category?: Database["public"]["Enums"]["inquiry_category"]
+          created_at?: string
+          email: string
+          id?: string
+          message: string
+          name: string
+          status?: Database["public"]["Enums"]["inquiry_status"]
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          ai_category?: string | null
+          ai_response?: string | null
+          category?: Database["public"]["Enums"]["inquiry_category"]
+          created_at?: string
+          email?: string
+          id?: string
+          message?: string
+          name?: string
+          status?: Database["public"]["Enums"]["inquiry_status"]
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       meetings: {
         Row: {
           attendees: Json | null
@@ -97,6 +171,13 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      inquiry_category:
+        | "general"
+        | "technical"
+        | "billing"
+        | "feedback"
+        | "other"
+      inquiry_status: "open" | "in_progress" | "closed"
       meeting_status: "scheduled" | "in_progress" | "completed" | "cancelled"
     }
     CompositeTypes: {
@@ -225,6 +306,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      inquiry_category: [
+        "general",
+        "technical",
+        "billing",
+        "feedback",
+        "other",
+      ],
+      inquiry_status: ["open", "in_progress", "closed"],
       meeting_status: ["scheduled", "in_progress", "completed", "cancelled"],
     },
   },
