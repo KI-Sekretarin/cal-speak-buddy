@@ -147,7 +147,7 @@ const CalSpeakBuddy = () => {
       const formData = new FormData();
       formData.append('file', audioBlob, 'recording.wav');
 
-      const response = await fetch('https://kisekretaerin.app.n8n.cloud/webhook-test/audio-to-transcribe', {
+      const response = await fetch('http://localhost:5678/webhook-test/audio-to-transcribe', {
         method: 'POST',
         body: formData,
       });
