@@ -10,6 +10,9 @@ const CalSpeakBuddy = () => {
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [transcription, setTranscription] = useState<string>('');
+  const [isConfirmationPending, setIsConfirmationPending] = useState(false);
+  const [commandResponse, setCommandResponse] = useState<string>('');
+  const [isProcessingCommand, setIsProcessingCommand] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
 
@@ -158,10 +161,11 @@ const CalSpeakBuddy = () => {
 
       const result = await response.text();
       setTranscription(result);
+      setIsConfirmationPending(true);
 
       toast({
         title: "Transkription erfolgreich",
-        description: "Audio wurde verarbeitet",
+        description: "Bitte bestätigen Sie den Befehl",
       });
       
       setAudioBlob(null);
@@ -175,6 +179,50 @@ const CalSpeakBuddy = () => {
     } finally {
       setIsUploading(false);
     }
+  };
+
+  const confirmCommand = async () => {
+    setIsProcessingCommand(true);
+    try {
+      const response = await fetch('https://n8n-service-jm5f.onrender.com/webhook-test/audio-to-transcribe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ transcript: transcription }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Befehl konnte nicht verarbeitet werden');
+      }
+
+      const result = await response.text();
+      setCommandResponse(result);
+      setIsConfirmationPending(false);
+
+      toast({
+        title: "Befehl erfolgreich",
+        description: "Ihr Befehl wurde verarbeitet",
+      });
+    } catch (error) {
+      console.error('Command error:', error);
+      toast({
+        title: "Befehlsfehler",
+        description: error instanceof Error ? error.message : "Unbekannter Fehler",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessingCommand(false);
+    }
+  };
+
+  const discardTranscription = () => {
+    setTranscription('');
+    setIsConfirmationPending(false);
+    toast({
+      title: "Verworfen",
+      description: "Transkript wurde gelöscht",
+    });
   };
 
   return (
@@ -256,7 +304,7 @@ const CalSpeakBuddy = () => {
             )}
 
             {/* Transcription Result */}
-            {transcription && (
+            {transcription && !isConfirmationPending && !commandResponse && (
               <div className="space-y-3 animate-fade-in">
                 <div className="flex items-center justify-between">
                   <h3 className="text-white font-semibold">Transkription</h3>
@@ -269,6 +317,61 @@ const CalSpeakBuddy = () => {
                 </div>
                 <div className="backdrop-blur-sm bg-white/5 rounded-2xl p-6 border border-white/10">
                   <p className="text-white/90 leading-relaxed whitespace-pre-wrap">{transcription}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Confirmation Step */}
+            {isConfirmationPending && (
+              <div className="space-y-4 animate-fade-in">
+                <div className="backdrop-blur-sm bg-white/5 rounded-2xl p-6 border border-white/10 space-y-4">
+                  <h3 className="text-white font-semibold text-lg">Befehl bestätigen</h3>
+                  <p className="text-white/90 leading-relaxed whitespace-pre-wrap">{transcription}</p>
+                  
+                  <div className="flex gap-3 pt-2">
+                    <button
+                      onClick={confirmCommand}
+                      disabled={isProcessingCommand}
+                      className="flex-1 relative group overflow-hidden rounded-xl"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-green-500 to-emerald-500 transition-transform group-hover:scale-105" />
+                      <div className="relative px-6 py-3 flex items-center justify-center text-white font-semibold">
+                        {isProcessingCommand ? "Wird verarbeitet..." : "Bestätigen"}
+                      </div>
+                    </button>
+                    
+                    <button
+                      onClick={discardTranscription}
+                      disabled={isProcessingCommand}
+                      className="flex-1 relative group overflow-hidden rounded-xl"
+                    >
+                      <div className="absolute inset-0 bg-white/10 transition-all group-hover:bg-white/20" />
+                      <div className="relative px-6 py-3 flex items-center justify-center text-white font-semibold border border-white/20 rounded-xl">
+                        Verwerfen
+                      </div>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Command Response */}
+            {commandResponse && (
+              <div className="space-y-3 animate-fade-in">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-white font-semibold">Bestätigung</h3>
+                  <button
+                    onClick={() => {
+                      setCommandResponse('');
+                      setTranscription('');
+                    }}
+                    className="text-white/60 hover:text-white/80 text-sm transition-colors"
+                  >
+                    Schließen
+                  </button>
+                </div>
+                <div className="backdrop-blur-sm bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-2xl p-6 border border-green-500/20">
+                  <p className="text-white/90 leading-relaxed whitespace-pre-wrap">{commandResponse}</p>
                 </div>
               </div>
             )}
