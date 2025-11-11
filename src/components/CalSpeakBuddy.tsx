@@ -184,12 +184,17 @@ const CalSpeakBuddy = () => {
   const confirmCommand = async () => {
     setIsProcessingCommand(true);
     try {
+      // Send transcript to webhook
       const response = await fetch('https://n8n-service-jm5f.onrender.com/webhook-test/audio-to-transcribe', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ transcript: transcription }),
+        body: JSON.stringify({ 
+          transcript: transcription,
+          confirmed: true,
+          timestamp: new Date().toISOString()
+        }),
       });
 
       if (!response.ok) {
@@ -202,7 +207,7 @@ const CalSpeakBuddy = () => {
 
       toast({
         title: "Befehl erfolgreich",
-        description: "Ihr Befehl wurde verarbeitet",
+        description: "Transkript wurde an den Webhook gesendet",
       });
     } catch (error) {
       console.error('Command error:', error);
