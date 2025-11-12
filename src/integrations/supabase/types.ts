@@ -1,3 +1,6 @@
+Need to install the following packages:
+supabase@2.58.5
+Ok to proceed? (y) 
 export type Json =
   | string
   | number
@@ -50,6 +53,8 @@ export type Database = {
           id: string
           inquiry_id: string
           is_approved: boolean
+          sent_at: string | null
+          sent_by: string | null
           suggested_response: string
         }
         Insert: {
@@ -57,6 +62,8 @@ export type Database = {
           id?: string
           inquiry_id: string
           is_approved?: boolean
+          sent_at?: string | null
+          sent_by?: string | null
           suggested_response: string
         }
         Update: {
@@ -64,6 +71,8 @@ export type Database = {
           id?: string
           inquiry_id?: string
           is_approved?: boolean
+          sent_at?: string | null
+          sent_by?: string | null
           suggested_response?: string
         }
         Relationships: [
@@ -72,6 +81,13 @@ export type Database = {
             columns: ["inquiry_id"]
             isOneToOne: false
             referencedRelation: "inquiries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_responses_sent_by_fkey"
+            columns: ["sent_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -89,6 +105,7 @@ export type Database = {
           status: Database["public"]["Enums"]["inquiry_status"]
           subject: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           ai_category?: string | null
@@ -102,6 +119,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["inquiry_status"]
           subject: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           ai_category?: string | null
@@ -115,8 +133,17 @@ export type Database = {
           status?: Database["public"]["Enums"]["inquiry_status"]
           subject?: string
           updated_at?: string
+          user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "inquiries_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       inquiry_queue: {
         Row: {
@@ -208,6 +235,9 @@ export type Database = {
       profiles: {
         Row: {
           company_name: string | null
+          contact_form_description: string | null
+          contact_form_slug: string | null
+          contact_form_title: string | null
           created_at: string
           full_name: string | null
           id: string
@@ -215,6 +245,9 @@ export type Database = {
         }
         Insert: {
           company_name?: string | null
+          contact_form_description?: string | null
+          contact_form_slug?: string | null
+          contact_form_title?: string | null
           created_at?: string
           full_name?: string | null
           id: string
@@ -222,6 +255,9 @@ export type Database = {
         }
         Update: {
           company_name?: string | null
+          contact_form_description?: string | null
+          contact_form_slug?: string | null
+          contact_form_title?: string | null
           created_at?: string
           full_name?: string | null
           id?: string
@@ -234,7 +270,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      generate_contact_slug: { Args: never; Returns: string }
     }
     Enums: {
       inquiry_category:

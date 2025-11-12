@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { ArrowLeft, Mail, User, Clock, Tag, MessageSquare, Sparkles } from 'lucide-react';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
+import { supabase } from '@/integrations/supabase/client';
 import AIResponseInterface from './AIResponseInterface';
 
 interface InquiryDetail {
@@ -26,6 +27,7 @@ interface InquiryDetail {
     id: string;
     suggested_response: string;
     is_approved: boolean;
+    sent_at: string | null;
     created_at: string;
   }>;
 }
@@ -37,15 +39,17 @@ export default function TicketDetail({ inquiryId, onBack }: { inquiryId: string;
   const loadInquiry = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`https://bqwfcixtbnodxuoixxkk.supabase.co/functions/v1/inquiries/${inquiryId}`, {
-        headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-      });
+      const { data, error } = await supabase
+        .from('inquiries')
+        .select(`
+          *,
+          ai_responses(id, suggested_response, is_approved, sent_at, created_at)
+        `)
+        .eq('id', inquiryId)
+        .single();
 
-      if (!response.ok) throw new Error('Failed to load');
+      if (error) throw error;
 
-      const data = await response.json();
       setInquiry(data);
     } catch (error) {
       toast.error('Fehler beim Laden der Anfrage');
@@ -61,16 +65,12 @@ export default function TicketDetail({ inquiryId, onBack }: { inquiryId: string;
 
   const updateStatus = async (newStatus: string) => {
     try {
-      const response = await fetch(`https://bqwfcixtbnodxuoixxkk.supabase.co/functions/v1/inquiries/${inquiryId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({ status: newStatus }),
-      });
+      const { error } = await supabase
+        .from('inquiries')
+        .update({ status: newStatus })
+        .eq('id', inquiryId);
 
-      if (!response.ok) throw new Error('Failed to update');
+      if (error) throw error;
 
       toast.success('Status aktualisiert');
       loadInquiry();

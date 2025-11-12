@@ -4,9 +4,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Eye, RefreshCw } from 'lucide-react';
+import { Eye, RefreshCw, Sparkles } from 'lucide-react';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import ContactFormLink from './ContactFormLink';
 
 interface Inquiry {
   id: string;
@@ -16,25 +19,35 @@ interface Inquiry {
   category: string;
   status: string;
   created_at: string;
+  ai_responses?: {
+    id: string;
+    suggested_response: string;
+    is_approved: boolean;
+  }[];
 }
 
 export default function AdminDashboard({ onSelectInquiry }: { onSelectInquiry: (id: string) => void }) {
+  const { user } = useAuth();
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   const loadInquiries = async () => {
+    if (!user) return;
+    
     setIsLoading(true);
     try {
-      const response = await fetch('https://bqwfcixtbnodxuoixxkk.supabase.co/functions/v1/inquiries', {
-        headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-      });
+      const { data, error } = await supabase
+        .from('inquiries')
+        .select(`
+          *,
+          ai_responses(id, suggested_response, is_approved, sent_at)
+        `)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
 
-      if (!response.ok) throw new Error('Failed to load');
+      if (error) throw error;
 
-      const data = await response.json();
-      setInquiries(data);
+      setInquiries(data || []);
     } catch (error) {
       toast.error('Fehler beim Laden der Anfragen');
       console.error(error);
@@ -74,6 +87,10 @@ export default function AdminDashboard({ onSelectInquiry }: { onSelectInquiry: (
     return labels[category as keyof typeof labels] || category;
   };
 
+  const hasAIResponse = (inquiry: Inquiry) => {
+    return inquiry.ai_responses && inquiry.ai_responses.length > 0;
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -89,6 +106,8 @@ export default function AdminDashboard({ onSelectInquiry }: { onSelectInquiry: (
             Aktualisieren
           </Button>
         </div>
+
+        <ContactFormLink />
 
         <Card className="backdrop-blur-sm bg-card/95 border-border/50">
           <CardHeader>
@@ -119,7 +138,17 @@ export default function AdminDashboard({ onSelectInquiry }: { onSelectInquiry: (
                       <TableCell className="text-muted-foreground">{inquiry.email}</TableCell>
                       <TableCell className="max-w-xs truncate">{inquiry.subject}</TableCell>
                       <TableCell>{getCategoryLabel(inquiry.category)}</TableCell>
-                      <TableCell>{getStatusBadge(inquiry.status)}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {getStatusBadge(inquiry.status)}
+                          {hasAIResponse(inquiry) && (
+                            <Badge variant="outline" className="gap-1 bg-purple-500/10 text-purple-500 border-purple-500/20">
+                              <Sparkles className="h-3 w-3" />
+                              KI
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell className="text-right">
                         <Button
                           size="sm"
