@@ -118,6 +118,48 @@ export type Database = {
         }
         Relationships: []
       }
+      inquiry_queue: {
+        Row: {
+          attempts: number
+          created_at: string
+          id: string
+          inquiry_id: string
+          last_attempt: string | null
+          last_error: string | null
+          next_try_at: string | null
+          payload: Json
+          processed_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          id?: string
+          inquiry_id: string
+          last_attempt?: string | null
+          last_error?: string | null
+          next_try_at?: string | null
+          payload: Json
+          processed_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          id?: string
+          inquiry_id?: string
+          last_attempt?: string | null
+          last_error?: string | null
+          next_try_at?: string | null
+          payload?: Json
+          processed_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       meetings: {
         Row: {
           attendees: Json | null
@@ -159,6 +201,30 @@ export type Database = {
           start_time?: string
           status?: Database["public"]["Enums"]["meeting_status"] | null
           title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          company_name: string | null
+          created_at: string
+          full_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          company_name?: string | null
+          created_at?: string
+          full_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          company_name?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
           updated_at?: string
         }
         Relationships: []
