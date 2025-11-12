@@ -4,7 +4,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Sparkles, Check, Send, Clock } from 'lucide-react';
+import { Sparkles, Check, Send, Clock, Edit2, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
@@ -22,7 +22,8 @@ export default function AIResponseInterface({ inquiryId, onUpdate }: { inquiryId
   const { user } = useAuth();
   const [existingResponses, setExistingResponses] = useState<AIResponse[]>([]);
   const [suggestedResponse, setSuggestedResponse] = useState('');
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editedText, setEditedText] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [sendingId, setSendingId] = useState<string | null>(null);
 
@@ -42,28 +43,6 @@ export default function AIResponseInterface({ inquiryId, onUpdate }: { inquiryId
       setExistingResponses(data || []);
     } catch (error) {
       console.error('Error loading responses:', error);
-    }
-  };
-
-  const generateAIResponse = async () => {
-    setIsGenerating(true);
-    try {
-      const response = await fetch('https://kisekretaerin.app.n8n.cloud/webhook-test/generate-ai-response', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ inquiry_id: inquiryId }),
-      });
-
-      if (!response.ok) throw new Error('Failed to generate');
-
-      const data = await response.json();
-      setSuggestedResponse(data.response || '');
-      toast.success('KI-Antwort generiert');
-    } catch (error) {
-      toast.error('Fehler beim Generieren der Antwort');
-      console.error(error);
-    } finally {
-      setIsGenerating(false);
     }
   };
 
@@ -95,6 +74,41 @@ export default function AIResponseInterface({ inquiryId, onUpdate }: { inquiryId
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const updateResponse = async (responseId: string) => {
+    if (!editedText.trim()) {
+      toast.error('Antwort darf nicht leer sein');
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('ai_responses')
+        .update({ suggested_response: editedText })
+        .eq('id', responseId);
+
+      if (error) throw error;
+
+      toast.success('Antwort aktualisiert');
+      setEditingId(null);
+      setEditedText('');
+      loadExistingResponses();
+      onUpdate();
+    } catch (error) {
+      toast.error('Fehler beim Aktualisieren');
+      console.error(error);
+    }
+  };
+
+  const startEditing = (response: AIResponse) => {
+    setEditingId(response.id);
+    setEditedText(response.suggested_response);
+  };
+
+  const cancelEditing = () => {
+    setEditingId(null);
+    setEditedText('');
   };
 
   const sendResponse = async (responseId: string, responseText: string) => {
@@ -130,18 +144,8 @@ export default function AIResponseInterface({ inquiryId, onUpdate }: { inquiryId
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-medium flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-primary" />
-          KI-Antwortvorschlag
+          Antwortvorschläge
         </h3>
-        <Button
-          onClick={generateAIResponse}
-          disabled={isGenerating}
-          variant="outline"
-          size="sm"
-          className="gap-2"
-        >
-          <Sparkles className={`h-4 w-4 ${isGenerating ? 'animate-spin' : ''}`} />
-          {isGenerating ? 'Generiere...' : 'Mit KI generieren'}
-        </Button>
       </div>
 
       {/* Existing AI Responses */}
@@ -165,21 +169,66 @@ export default function AIResponseInterface({ inquiryId, onUpdate }: { inquiryId
                         Versendet
                       </Badge>
                     ) : (
-                      <Button
-                        size="sm"
-                        onClick={() => sendResponse(response.id, response.suggested_response)}
-                        disabled={sendingId === response.id}
-                        className="gap-2"
-                      >
-                        <Send className="h-3 w-3" />
-                        {sendingId === response.id ? 'Versende...' : 'Versenden'}
-                      </Button>
+                      <>
+                        {editingId !== response.id && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => startEditing(response)}
+                            className="gap-2"
+                          >
+                            <Edit2 className="h-3 w-3" />
+                            Bearbeiten
+                          </Button>
+                        )}
+                        <Button
+                          size="sm"
+                          onClick={() => sendResponse(response.id, response.suggested_response)}
+                          disabled={sendingId === response.id || editingId === response.id}
+                          className="gap-2"
+                        >
+                          <Send className="h-3 w-3" />
+                          {sendingId === response.id ? 'Versende...' : 'Versenden'}
+                        </Button>
+                      </>
                     )}
                   </div>
                 </div>
-                <p className="text-sm leading-relaxed whitespace-pre-wrap bg-background/50 p-3 rounded">
-                  {response.suggested_response}
-                </p>
+                
+                {editingId === response.id ? (
+                  <div className="space-y-2">
+                    <Textarea
+                      value={editedText}
+                      onChange={(e) => setEditedText(e.target.value)}
+                      rows={8}
+                      className="bg-background/50 resize-none"
+                    />
+                    <div className="flex gap-2 justify-end">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={cancelEditing}
+                        className="gap-2"
+                      >
+                        <X className="h-3 w-3" />
+                        Abbrechen
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => updateResponse(response.id)}
+                        className="gap-2"
+                      >
+                        <Check className="h-3 w-3" />
+                        Speichern
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm leading-relaxed whitespace-pre-wrap bg-background/50 p-3 rounded">
+                    {response.suggested_response}
+                  </p>
+                )}
+                
                 {response.sent_at && (
                   <p className="text-xs text-muted-foreground">
                     Versendet am {format(new Date(response.sent_at), 'dd.MM.yyyy HH:mm', { locale: de })}
@@ -192,10 +241,13 @@ export default function AIResponseInterface({ inquiryId, onUpdate }: { inquiryId
       )}
 
       <Card className="p-4 bg-muted/30 border-border/50">
+        <div className="space-y-2 mb-4">
+          <h4 className="text-sm font-medium">Neue Antwort erstellen:</h4>
+        </div>
         <Textarea
           value={suggestedResponse}
           onChange={(e) => setSuggestedResponse(e.target.value)}
-          placeholder="KI-generierte Antwort wird hier angezeigt oder schreiben Sie eine eigene..."
+          placeholder="Schreiben Sie hier Ihre Antwort..."
           rows={8}
           className="bg-background/50 resize-none"
         />
