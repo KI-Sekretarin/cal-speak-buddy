@@ -19,7 +19,11 @@ serve(async (req) => {
 
     const url = new URL(req.url);
     const pathParts = url.pathname.split('/');
-    const id = pathParts[pathParts.length - 1];
+    const lastSegment = pathParts[pathParts.length - 1];
+    
+    // Check if last segment is a valid UUID
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const id = uuidRegex.test(lastSegment) ? lastSegment : null;
 
     // GET all inquiries
     if (req.method === 'GET' && !id) {
