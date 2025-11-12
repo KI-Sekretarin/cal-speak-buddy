@@ -114,25 +114,18 @@ export default function AIResponseInterface({ inquiryId, onUpdate }: { inquiryId
   const sendResponse = async (responseId: string, responseText: string) => {
     setSendingId(responseId);
     try {
-      // Markiere als gesendet
-      const { error: updateError } = await supabase
-        .from('ai_responses')
-        .update({
-          sent_at: new Date().toISOString(),
-          sent_by: user?.id,
-          is_approved: true,
-        })
-        .eq('id', responseId);
+      // Rufe Edge Function auf zum E-Mail-Versand
+      const { data, error } = await supabase.functions.invoke('send-inquiry-response', {
+        body: { responseId },
+      });
 
-      if (updateError) throw updateError;
+      if (error) throw error;
 
-      // Hier würde normalerweise die E-Mail versendet werden
-      // via Edge Function oder Webhook
-      toast.success('Antwort wurde versendet');
+      toast.success('Antwort wurde per E-Mail versendet!');
       loadExistingResponses();
       onUpdate();
     } catch (error) {
-      toast.error('Fehler beim Versenden');
+      toast.error('Fehler beim Versenden der E-Mail');
       console.error(error);
     } finally {
       setSendingId(null);
