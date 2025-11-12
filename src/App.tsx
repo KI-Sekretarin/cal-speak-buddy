@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Contact from "./pages/Contact";
+import PublicContactForm from "./pages/PublicContactForm";
 import Admin from "./pages/Admin";
 import VoiceCommands from "./pages/VoiceCommands";
 import Chat from "./pages/Chat";
@@ -32,6 +33,7 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/contact/:slug" element={<PublicContactForm />} />
             <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
             <Route path="/voice-commands" element={<ProtectedRoute><VoiceCommands /></ProtectedRoute>} />
             <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
