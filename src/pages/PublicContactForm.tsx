@@ -83,13 +83,11 @@ export default function PublicContactForm() {
     try {
       const { error } = await supabase.from('inquiries').insert({
         user_id: settings.userId,
-        contact_form_slug: slug,
         name: formData.name,
         email: formData.email,
-        phone: formData.phone || null,
         subject: formData.subject,
         message: formData.message,
-        status: 'neu',
+        status: 'open',
       });
 
       if (error) throw error;
