@@ -85,6 +85,7 @@ export default function PublicContactForm() {
         user_id: settings.userId,
         name: formData.name,
         email: formData.email,
+        phone: formData.phone || null,
         subject: formData.subject,
         message: formData.message,
         status: 'open',

@@ -1,6 +1,3 @@
-Need to install the following packages:
-supabase@2.58.5
-Ok to proceed? (y) 
 export type Json =
   | string
   | number
@@ -102,6 +99,7 @@ export type Database = {
           id: string
           message: string
           name: string
+          phone: string | null
           status: Database["public"]["Enums"]["inquiry_status"]
           subject: string
           updated_at: string
@@ -116,6 +114,7 @@ export type Database = {
           id?: string
           message: string
           name: string
+          phone?: string | null
           status?: Database["public"]["Enums"]["inquiry_status"]
           subject: string
           updated_at?: string
@@ -130,6 +129,7 @@ export type Database = {
           id?: string
           message?: string
           name?: string
+          phone?: string | null
           status?: Database["public"]["Enums"]["inquiry_status"]
           subject?: string
           updated_at?: string

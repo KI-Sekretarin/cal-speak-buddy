@@ -9,6 +9,7 @@ import { ArrowLeft, Mail, User, Clock, Tag, MessageSquare, Sparkles } from 'luci
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
 import AIResponseInterface from './AIResponseInterface';
 
 interface InquiryDetail {
@@ -63,7 +64,7 @@ export default function TicketDetail({ inquiryId, onBack }: { inquiryId: string;
     loadInquiry();
   }, [inquiryId]);
 
-  const updateStatus = async (newStatus: string) => {
+  const updateStatus = async (newStatus: Database['public']['Enums']['inquiry_status']) => {
     try {
       const { error } = await supabase
         .from('inquiries')

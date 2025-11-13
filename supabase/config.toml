@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.ai-responses]
 verify_jwt = false
+
+[functions.send-inquiry-response]
+verify_jwt = false
