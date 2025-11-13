@@ -5,15 +5,15 @@ import { Mic, Mail, MessageSquare, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import FeatureModal from '@/components/FeatureModal';
 
-// Hero and feature images — switched to AI-generated images using Pollinations (prompt-based)
-// These endpoints generate images on-the-fly from the prompt. If you prefer stable, download and host images locally.
+// Hero and feature images — AI prompts tuned to primary color #2463ea for a simple, modern look.
+// Recommend generating and hosting final assets in `public/` for stability and performance.
 const featureImages = [
-  'https://image.pollinations.ai/prompt/AI%20assistant%20in%20a%20modern%20office%20environment%2C%20soft%20pastel%20colors%2C%20high%20detail%2C%20isometric',
-  'https://image.pollinations.ai/prompt/automated%20ticketing%20system%20visualization%2C%20clean%20UI%2C%20data%20flow%2C%20illustration',
-  'https://image.pollinations.ai/prompt/chatbot%20integration%20with%20web%20chat%20widget%2C%20friendly%20ai%20character%2C%20vector%20art',
-  'https://image.pollinations.ai/prompt/ai%20suggestions%20and%20templates%2C%20digital%20assistant%2C%20futuristic%20UI',
-  'https://image.pollinations.ai/prompt/automations%20and%20workflows%20connected%20by%20lines%2C%20business%20process%2C%20isometric',
-  'https://image.pollinations.ai/prompt/analytics%20dashboard%20with%20charts%20and%20insights%2C%20modern%20ui%2C%20illustration'
+  'https://image.pollinations.ai/prompt/minimal%20illustration%20AI%20assistant%20%232463ea%20palette%20flat%20icons%20clean',
+  'https://image.pollinations.ai/prompt/minimal%20illustration%20ticketing%20system%20%232463ea%20palette%20flat%20icons',
+  'https://image.pollinations.ai/prompt/minimal%20chatbot%20widget%20illustration%20%232463ea%20palette%20vector',
+  'https://image.pollinations.ai/prompt/minimal%20ai%20suggestions%20illustration%20%232463ea%20palette%20flat',
+  'https://image.pollinations.ai/prompt/minimal%20workflows%20automation%20illustration%20%232463ea%20palette%20isometric',
+  'https://image.pollinations.ai/prompt/minimal%20analytics%20dashboard%20illustration%20%232463ea%20palette%20clean'
 ];
 
 export default function Index() {
@@ -85,9 +85,10 @@ export default function Index() {
       {/* Hero */}
       <section className="relative overflow-hidden">
         <div
-          className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=1920&q=80')] bg-cover bg-center filter brightness-75 dark:brightness-50"
+          className="absolute inset-0 bg-[url('https://image.pollinations.ai/prompt/modern%20abstract%20hero%20background%20%232463ea%20gradient%20glassmorphism%20minimal%20shapes%20soft%20glow')] bg-cover bg-center filter brightness-70 dark:brightness-50"
           aria-hidden
         />
+        <div className="absolute inset-0 bg-[rgba(36,99,234,0.36)] mix-blend-multiply" aria-hidden />
         <div className="relative z-10 container mx-auto py-28">
           <div className="bg-white/60 dark:bg-black/50 backdrop-blur-md rounded-3xl p-10 md:p-16 shadow-glow">
             <div className="grid lg:grid-cols-2 gap-8 items-center">
@@ -101,8 +102,9 @@ export default function Index() {
                   <span className="bg-gradient-primary bg-clip-text text-transparent"> KI-Sekretärin</span>
                 </h1>
                 <p className="text-lg text-muted-foreground max-w-2xl">
-                  Verwalte Anfragen, Termine und E-Mails mit einem visuellen, kartenbasierten Interface
-                  – unterstützt durch intelligente KI-Antworten und automatisierte Workflows.
+                  Intelligente Automatisierung für Termine, Anfragen und Kommunikation —
+                  KI-gestützte Antwortvorlagen, Multichannel-Integration und Workflow-Automatisierung,
+                  schnell eingerichtet und datenschutzbewusst umgesetzt.
                 </p>
                 <div className="flex flex-wrap gap-4">
                   {user ? (
