@@ -4,7 +4,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Code, Layers, Zap, BarChart, Users, Globe, Star } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import FeatureModal from '@/components/FeatureModal';
-
 type Feature = {
   icon?: any;
   title: string;
@@ -13,100 +12,83 @@ type Feature = {
   longDescription?: string;
   bullets?: string[];
 };
-
-const features: Feature[] = [
-  {
-    icon: Code,
-    title: 'Schnelle Automatisierung',
-    description: 'Erstelle Regeln & Workflows ohne Code',
+const features: Feature[] = [{
+  icon: Code,
+  title: 'Schnelle Automatisierung',
+  description: 'Erstelle Regeln & Workflows ohne Code',
   image: '/src/assets/hero-ai-assistant.jpg',
-    longDescription:
-      'Automatisiere wiederkehrende Aufgaben: Termine planen, Einladungen versenden, Antworten vorschlagen und vieles mehr — alles mit wenigen Regeln.',
-    bullets: ['No-code Workflows', 'Trigger & Bedingungen', 'Vorlagenbibliothek'],
-  },
-  {
-    icon: Layers,
-    title: 'Zentrale Inbox',
-    description: 'E-Mail, Chat & Tickets in einer Oberfläche',
+  longDescription: 'Automatisiere wiederkehrende Aufgaben: Termine planen, Einladungen versenden, Antworten vorschlagen und vieles mehr — alles mit wenigen Regeln.',
+  bullets: ['No-code Workflows', 'Trigger & Bedingungen', 'Vorlagenbibliothek']
+}, {
+  icon: Layers,
+  title: 'Zentrale Inbox',
+  description: 'E-Mail, Chat & Tickets in einer Oberfläche',
   image: '/src/assets/hero-ai-assistant.jpg',
-    longDescription: 'Alle Kanäle an einem Ort: Priorisieren, delegieren und mit KI-Vorschlägen schneller antworten.',
-    bullets: ['Unified view', 'Mentions & Snooze', 'SLA & Priorisierung'],
-  },
-  {
-    icon: Zap,
-    title: 'Integrationen',
-    description: 'N8N, Kalender, CRMs und mehr verbinden',
+  longDescription: 'Alle Kanäle an einem Ort: Priorisieren, delegieren und mit KI-Vorschlägen schneller antworten.',
+  bullets: ['Unified view', 'Mentions & Snooze', 'SLA & Priorisierung']
+}, {
+  icon: Zap,
+  title: 'Integrationen',
+  description: 'N8N, Kalender, CRMs und mehr verbinden',
   image: '/src/assets/hero-ai-assistant.jpg',
-    longDescription: 'Verbinde bestehende Tools mit wenigen Klicks und synchronisiere Termine, Kontakte und Tickets.',
-    bullets: ['Kalender-Sync', 'CRM-Connector', 'Webhook & API'],
-  },
-  {
-    icon: BarChart,
-    title: 'Insights',
-    description: 'Metriken & KPIs für Teams',
+  longDescription: 'Verbinde bestehende Tools mit wenigen Klicks und synchronisiere Termine, Kontakte und Tickets.',
+  bullets: ['Kalender-Sync', 'CRM-Connector', 'Webhook & API']
+}, {
+  icon: BarChart,
+  title: 'Insights',
+  description: 'Metriken & KPIs für Teams',
   image: '/src/assets/hero-ai-assistant.jpg',
-    longDescription: 'Dashboard & Reports helfen dir, Antwortzeiten, Auslastung und Team-Performance zu verstehen und zu verbessern.',
-    bullets: ['Custom Dashboards', 'Export & Alerts', 'Team KPIs'],
-  },
-  {
-    icon: Users,
-    title: 'Team & Rollen',
-    description: 'Fein granulare Berechtigungen & Audit-Logs',
+  longDescription: 'Dashboard & Reports helfen dir, Antwortzeiten, Auslastung und Team-Performance zu verstehen und zu verbessern.',
+  bullets: ['Custom Dashboards', 'Export & Alerts', 'Team KPIs']
+}, {
+  icon: Users,
+  title: 'Team & Rollen',
+  description: 'Fein granulare Berechtigungen & Audit-Logs',
   image: '/src/assets/hero-ai-assistant.jpg',
-    longDescription: 'Verwalte Rollen, Zugriffsrechte und Audit-Logs zentral — ideal für wachsende Teams.',
-    bullets: ['Rollenzuweisung', 'Audit-Logs', 'SSO & Provisioning'],
-  },
-  {
-    icon: Globe,
-    title: 'Mehrsprachig',
-    description: 'Mehrere Sprachen & Tonalitäten',
+  longDescription: 'Verwalte Rollen, Zugriffsrechte und Audit-Logs zentral — ideal für wachsende Teams.',
+  bullets: ['Rollenzuweisung', 'Audit-Logs', 'SSO & Provisioning']
+}, {
+  icon: Globe,
+  title: 'Mehrsprachig',
+  description: 'Mehrere Sprachen & Tonalitäten',
   image: '/src/assets/hero-ai-assistant.jpg',
-    longDescription: 'Automatische Übersetzungen und Tonalitätseinstellungen für Antworten in mehreren Sprachen.',
-    bullets: ['Autom. Übersetzung', 'Tonalitäts-Profile', 'Locale-Support'],
-  },
-];
-
-const testimonials = [
-  {
-    name: 'Anna Müller, Product Lead',
-    quote: 'cal-speak-buddy hat unsere Meeting-Organisation halbiert — und die Teamkommunikation spürbar verbessert.',
-  },
-  {
-    name: 'Tom Berger, IT-Admin',
-    quote: 'Einfache Integration mit unserem Kalender und CRM. Setup in wenigen Minuten.',
-  },
-];
-
+  longDescription: 'Automatische Übersetzungen und Tonalitätseinstellungen für Antworten in mehreren Sprachen.',
+  bullets: ['Autom. Übersetzung', 'Tonalitäts-Profile', 'Locale-Support']
+}];
+const testimonials = [{
+  name: 'Anna Müller, Product Lead',
+  quote: 'cal-speak-buddy hat unsere Meeting-Organisation halbiert — und die Teamkommunikation spürbar verbessert.'
+}, {
+  name: 'Tom Berger, IT-Admin',
+  quote: 'Einfache Integration mit unserem Kalender und CRM. Setup in wenigen Minuten.'
+}];
 export default function Index() {
   const navigate = useNavigate();
-  const { user } = useAuth();
-
+  const {
+    user
+  } = useAuth();
   const [selectedFeature, setSelectedFeature] = useState<Feature | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
-
   useEffect(() => {
     const els = Array.from(document.querySelectorAll('.reveal')) as HTMLElement[];
     if (!('IntersectionObserver' in window)) {
-      els.forEach((el) => el.classList.add('reveal-visible'));
+      els.forEach(el => el.classList.add('reveal-visible'));
       return;
     }
-    const io = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('reveal-visible');
-            io.unobserve(entry.target);
-          }
-        });
-      },
-      { threshold: 0.12 }
-    );
-    els.forEach((el) => io.observe(el));
+    const io = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('reveal-visible');
+          io.unobserve(entry.target);
+        }
+      });
+    }, {
+      threshold: 0.12
+    });
+    els.forEach(el => io.observe(el));
     return () => io.disconnect();
   }, []);
-
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-950 text-slate-100">
+  return <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-950 text-slate-100">
       <header className="relative">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-[#071028] to-[#021026] opacity-95" />
         <div className="relative z-10 container mx-auto py-24">
@@ -126,10 +108,13 @@ export default function Index() {
                 <Button size="lg" className="bg-[#2463ea] hover:brightness-110 text-white" onClick={() => navigate('/register')}>
                   Kostenlos testen
                 </Button>
-                <Button size="lg" variant="outline" onClick={() => navigate('/help')}>
+                <Button size="lg" variant="outline" onClick={() => navigate('/help')} className="bg-[#2463ea]">
                   Dokumentation
                 </Button>
-                <Button size="lg" variant="ghost" onClick={() => window.scrollTo({ top: 800, behavior: 'smooth' })}>
+                <Button size="lg" variant="ghost" onClick={() => window.scrollTo({
+                top: 800,
+                behavior: 'smooth'
+              })}>
                   Mehr erfahren
                 </Button>
               </div>
@@ -150,7 +135,7 @@ export default function Index() {
                     <div>Mode: Assist</div>
                   </div>
                   <pre className="mt-4 bg-[#061323] text-[#bfe1ff] rounded-md p-4 text-sm overflow-auto h-56">
-{`# Assistent: Neues Meeting anlegen
+                  {`# Assistent: Neues Meeting anlegen
 User: Morgen 10:00
 Assistant: Meeting erstellt — Einladungen versendet
 
@@ -159,7 +144,7 @@ Assistant: Vorschlag für Antwort generiert (Tonalität: freundlich)`}
                   </pre>
                   <div className="mt-4 flex items-center gap-3">
                     <Button size="sm" className="bg-[#1f6ae0] text-white">Integrate</Button>
-                    <Button size="sm" variant="outline">Open Dashboard</Button>
+                    <Button size="sm" variant="outline" className="bg-[#1f6ae0]">Open Dashboard</Button>
                   </div>
                 </div>
               </div>
@@ -174,15 +159,10 @@ Assistant: Vorschlag für Antwort generiert (Tonalität: freundlich)`}
           <p className="text-slate-400 max-w-2xl mb-8">Von Schnellantworten bis zu komplexen Workflows — cal-speak-buddy hilft Teams, weniger Zeit mit Routine zu verbringen und mehr Impact zu erzeugen.</p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {features.map((f, i) => (
-              <button
-                key={i}
-                onClick={() => {
-                  setSelectedFeature(f);
-                  setModalOpen(true);
-                }}
-                className="reveal text-left rounded-2xl p-6 bg-slate-800/90 text-slate-100 hover:shadow-2xl transition-transform hover:-translate-y-2 focus:outline-none"
-              >
+            {features.map((f, i) => <button key={i} onClick={() => {
+            setSelectedFeature(f);
+            setModalOpen(true);
+          }} className="reveal text-left rounded-2xl p-6 bg-slate-800/90 text-slate-100 hover:shadow-2xl transition-transform hover:-translate-y-2 focus:outline-none">
                 <div className="flex items-start gap-4">
                   <div className="h-12 w-12 rounded-lg flex items-center justify-center bg-gradient-to-br from-[#123a8b] to-[#2f7be6] text-white">
                     {f.icon && <f.icon className="h-6 w-6" />}
@@ -192,8 +172,7 @@ Assistant: Vorschlag für Antwort generiert (Tonalität: freundlich)`}
                     <p className="text-sm text-slate-200">{f.description}</p>
                   </div>
                 </div>
-              </button>
-            ))}
+              </button>)}
           </div>
         </section>
 
@@ -214,7 +193,7 @@ Assistant: Vorschlag für Antwort generiert (Tonalität: freundlich)`}
                 <p className="text-sm text-slate-400 mb-4">Starte in Minuten — keine Kreditkarte erforderlich. Upgrade jederzeit möglich.</p>
                 <div className="flex gap-3">
                   <Button className="bg-[#2463ea] text-white" onClick={() => navigate('/register')}>Jetzt testen</Button>
-                  <Button variant="outline" onClick={() => navigate('/contact')}>Kontakt</Button>
+                  <Button variant="outline" onClick={() => navigate('/contact')} className="bg-[#2463ea]">Kontakt</Button>
                 </div>
               </div>
             </div>
@@ -224,12 +203,10 @@ Assistant: Vorschlag für Antwort generiert (Tonalität: freundlich)`}
         <section className="container mx-auto py-16">
           <h3 className="text-2xl font-bold mb-6">Was Kunden sagen</h3>
           <div className="grid md:grid-cols-2 gap-6">
-            {testimonials.map((t, idx) => (
-              <div key={idx} className="rounded-2xl p-6 bg-slate-800/90 text-slate-100">
+            {testimonials.map((t, idx) => <div key={idx} className="rounded-2xl p-6 bg-slate-800/90 text-slate-100">
                 <blockquote className="text-slate-100">“{t.quote}”</blockquote>
                 <div className="mt-4 text-sm text-slate-300">— {t.name}</div>
-              </div>
-            ))}
+              </div>)}
           </div>
         </section>
 
@@ -239,7 +216,7 @@ Assistant: Vorschlag für Antwort generiert (Tonalität: freundlich)`}
             <p className="text-slate-300 mb-6">Teste kostenlos — keine Kreditkarte erforderlich.</p>
             <div className="flex items-center justify-center gap-4">
               <Button className="bg-[#2463ea] text-white">Kostenlos testen</Button>
-              <Button variant="outline">Demo anfragen</Button>
+              <Button variant="outline" className="bg-[#2463ea]">Demo anfragen</Button>
             </div>
           </div>
         </section>
@@ -256,6 +233,5 @@ Assistant: Vorschlag für Antwort generiert (Tonalität: freundlich)`}
 
         <FeatureModal open={modalOpen} feature={selectedFeature as any} onClose={() => setModalOpen(false)} />
       </main>
-    </div>
-  );
+    </div>;
 }
