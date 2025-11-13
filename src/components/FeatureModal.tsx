@@ -25,9 +25,9 @@ export default function FeatureModal({
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
 
       <div className="relative z-10 max-w-3xl w-full mx-4">
-        <div className="bg-card rounded-2xl overflow-hidden shadow-2xl ring-1 ring-black/5">
+  <div className="bg-slate-800 text-slate-100 rounded-2xl overflow-hidden shadow-2xl ring-1 ring-black/30">
           <div className="relative">
-            <img src={feature.image} alt={feature.title} className="w-full h-64 object-cover" />
+            <img src={feature.image} alt={feature.title} className="w-full h-64 object-cover opacity-95" />
             <button
               aria-label="Close"
               onClick={onClose}
