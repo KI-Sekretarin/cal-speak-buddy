@@ -78,52 +78,6 @@ export default function Index() {
       bullets: ['Antwortzeit-Metriken', 'Themen-Cluster', 'Export für BI-Tools'],
       image: featureImages[5],
     },
-    // zusätzliche Features — erweitert basierend auf Wunsch des Nutzers
-    {
-      icon: Sparkles,
-      title: 'Onboarding-Assistent',
-      description: 'Schnelle Einrichtung & Schulung für neue Teammitglieder',
-      longDescription:
-        'Ein interaktiver Onboarding-Assistent führt neue Mitarbeiter durch Prozesse, Standardantworten und Workflows — reduziert Schulungsaufwand.',
-      bullets: ['Interaktive Tutorials', 'Kontextbezogene Hilfen', 'Rollenspezifische Einstellungen'],
-      image: 'https://image.pollinations.ai/prompt/onboarding%20assistant%20interactive%20tutorial%2C%20digital%20illustration',
-    },
-    {
-      icon: Sparkles,
-      title: 'Multichannel-Support',
-      description: 'E-Mails, Chat, Telefon & Social in einer Oberfläche',
-      longDescription:
-        'Vereine alle Kontaktkanäle in einer Ansicht, damit Antworten kohärent bleiben und keine Anfrage verloren geht.',
-      bullets: ['Kanalübergreifende Historie', 'Zentrale Suche', 'Antwortvorlagen je Kanal'],
-      image: 'https://image.pollinations.ai/prompt/multichannel%20support%20unified%20inbox%2C%20isometric%20illustration',
-    },
-    {
-      icon: Sparkles,
-      title: 'SLA & Priorisierung',
-      description: 'Service-Level-Agreements überwachen und einhalten',
-      longDescription:
-        'Definiere SLAs, überwache Fristen und erhalte Warnungen bei Überschreitungen, um Kundenzufriedenheit sicherzustellen.',
-      bullets: ['Echtzeit-Warnungen', 'SLA-basierte Priorität', 'Reporting'],
-      image: 'https://image.pollinations.ai/prompt/SLA%20monitoring%20dashboard%2C%20data%20visualization',
-    },
-    {
-      icon: Sparkles,
-      title: 'Vorlagen & Snippets',
-      description: 'Schnellantworten und individualisierbare Templates',
-      longDescription:
-        'Erstelle und teile Vorlagen, die Mitarbeiter als Basis verwenden können — konsistente Kommunikation leicht gemacht.',
-      bullets: ['Template-Bibliothek', 'Personalisierte Platzhalter', 'Teamfreigaben'],
-      image: 'https://image.pollinations.ai/prompt/email%20templates%20and%20snippets%2C%20vector%20art',
-    },
-    {
-      icon: Sparkles,
-      title: 'Datenschutz & Compliance',
-      description: 'DSGVO-konforme Speicherung und Zugriffskontrolle',
-      longDescription:
-        'Fein granulare Berechtigungen und Audit-Logs sorgen dafür, dass Datenverarbeitung transparent und regelkonform bleibt.',
-      bullets: ['Audit-Logs', 'Rollenbasierter Zugriff', 'Datenverschlüsselung'],
-      image: 'https://image.pollinations.ai/prompt/data%20privacy%20and%20compliance%20illustration%2C%20secure%20shield',
-    },
   ];
 
   return (
@@ -247,7 +201,63 @@ export default function Index() {
         }}
       />
 
-      {/* Testimonials & extra content */}
+      {/* How it works */}
+      <section className="container mx-auto py-16">
+        <h2 className="text-3xl font-bold mb-8">So funktioniert's</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="rounded-xl p-6 bg-card shadow">
+            <h3 className="font-semibold mb-2">1. Verbinden</h3>
+            <p className="text-muted-foreground">Verbinde deine Kanäle (E-Mail, Chat, Kalender) mit wenigen Klicks.</p>
+          </div>
+          <div className="rounded-xl p-6 bg-card shadow">
+            <h3 className="font-semibold mb-2">2. Automatisieren</h3>
+            <p className="text-muted-foreground">Lege Regeln und Workflows fest – wiederkehrende Aufgaben laufen automatisch.</p>
+          </div>
+          <div className="rounded-xl p-6 bg-card shadow">
+            <h3 className="font-semibold mb-2">3. Optimieren</h3>
+            <p className="text-muted-foreground">Nutze Insights und KI-Vorschläge, um Prozesse kontinuierlich zu verbessern.</p>
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing teaser */}
+      <section className="bg-gradient-to-tr from-primary/6 to-transparent py-16">
+        <div className="container mx-auto text-center">
+          <h2 className="text-3xl font-bold mb-4">Preise, die mitwachsen</h2>
+          <p className="text-muted-foreground mb-8">Kostenlose Testphase, transparente Pakete und flexible Team-Optionen.</p>
+          <div className="mx-auto max-w-4xl grid grid-cols-1 sm:grid-cols-3 gap-6">
+            <div className="p-6 rounded-xl bg-card shadow">
+              <div className="text-xl font-semibold mb-2">Starter</div>
+              <div className="text-2xl font-bold mb-4">Kostenlos</div>
+              <ul className="text-sm text-muted-foreground mb-4">
+                <li>Basale KI-Funktionen</li>
+                <li>1 Projekt</li>
+              </ul>
+              <Button variant="outline">Loslegen</Button>
+            </div>
+            <div className="p-6 rounded-xl bg-primary text-white shadow-lg">
+              <div className="text-xl font-semibold mb-2">Business</div>
+              <div className="text-2xl font-bold mb-4">€29 / Monat</div>
+              <ul className="text-sm mb-4">
+                <li>Alle Kernfunktionen</li>
+                <li>Team-Accounts</li>
+              </ul>
+              <Button>Jetzt testen</Button>
+            </div>
+            <div className="p-6 rounded-xl bg-card shadow">
+              <div className="text-xl font-semibold mb-2">Enterprise</div>
+              <div className="text-2xl font-bold mb-4">Auf Anfrage</div>
+              <ul className="text-sm text-muted-foreground mb-4">
+                <li>Individuelle Integrationen</li>
+                <li>Unterstützung & SLA</li>
+              </ul>
+              <Button variant="ghost">Kontakt</Button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials */}
       <section className="container mx-auto py-16">
         <h2 className="text-3xl font-bold mb-8">Was unsere Nutzer sagen</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -263,6 +273,21 @@ export default function Index() {
             <p className="text-muted-foreground mb-4">"Einfache Integration in N8N – Automatisierungen laufen stabil."</p>
             <div className="text-sm font-medium">Startup X</div>
           </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="container mx-auto py-16">
+        <h2 className="text-3xl font-bold mb-8">Häufige Fragen</h2>
+        <div className="space-y-4 max-w-3xl">
+          <details className="p-4 bg-card rounded-lg">
+            <summary className="font-medium">Ist das System DSGVO-konform?</summary>
+            <p className="mt-2 text-muted-foreground">Wir bieten DSGVO-konforme Speicherung und rollenbasierte Zugriffe; für Enterprise-Kunden können weitere Maßnahmen vereinbart werden.</p>
+          </details>
+          <details className="p-4 bg-card rounded-lg">
+            <summary className="font-medium">Welche Integrationen gibt es?</summary>
+            <p className="mt-2 text-muted-foreground">Kalender, E-Mail, Zapier, N8N und gängige CRMs; individuelle Integrationen sind möglich.</p>
+          </details>
         </div>
       </section>
 
