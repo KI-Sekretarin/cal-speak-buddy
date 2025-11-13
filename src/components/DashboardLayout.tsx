@@ -11,20 +11,23 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { 
-  Mic, 
-  Mail, 
-  MessageSquare, 
-  Globe, 
-  Wifi, 
-  Settings, 
+import {
+  Mic,
+  Mail,
+  MessageSquare,
+  Globe,
+  Wifi,
+  Settings,
   HelpCircle,
   Menu,
   X,
   User,
   LogOut,
-  Search
+  Search,
+  Sun,
+  Moon,
 } from 'lucide-react';
+import ThemeToggle from '@/components/ThemeToggle';
 import { cn } from '@/lib/utils';
 
 interface DashboardLayoutProps {
@@ -84,9 +87,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           {/* User Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="rounded-full">
-                <User className="h-5 w-5" />
-              </Button>
+              <div className="flex items-center gap-2">
+                <ThemeToggle />
+                <Button variant="ghost" size="icon" className="rounded-full">
+                  <User className="h-5 w-5" />
+                </Button>
+              </div>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>
