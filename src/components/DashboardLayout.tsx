@@ -37,7 +37,7 @@ const navigation = [
   { name: 'Chat', href: '/chat', icon: MessageSquare, active: false },
   { name: 'Meeting-Webseiten', href: '/meetings', icon: Globe, active: false },
   { name: 'Kiosk-Modul', href: '/kiosk', icon: Wifi, active: false },
-  { name: 'Einstellungen', href: '/settings', icon: Settings, active: false },
+  { name: 'Einstellungen', href: '/settings', icon: Settings, active: true },
   { name: 'Hilfe', href: '/help', icon: HelpCircle, active: false },
 ];
 
