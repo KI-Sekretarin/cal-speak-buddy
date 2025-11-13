@@ -2,50 +2,80 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { Mic, Mail, MessageSquare, Sparkles } from 'lucide-react';
+import { useState } from 'react';
+import FeatureModal from '@/components/FeatureModal';
 
+// Hero and feature images — switched to more AI/creative/unsplash images to match the new design
 const featureImages = [
-  'https://images.pexels.com/photos/3183171/pexels-photo-3183171.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=750&w=1260',
-  'https://images.pexels.com/photos/847393/pexels-photo-847393.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=750&w=1260',
-  'https://images.pexels.com/photos/3861972/pexels-photo-3861972.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=750&w=1260',
-  'https://images.pexels.com/photos/1181675/pexels-photo-1181675.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=750&w=1260',
-  'https://images.pexels.com/photos/3184302/pexels-photo-3184302.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=750&w=1260',
-  'https://images.pexels.com/photos/574071/pexels-photo-574071.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=750&w=1260'
+  'https://images.unsplash.com/photo-1542831371-d531d36971e6?auto=format&fit=crop&w=1400&q=80',
+  'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=1400&q=80',
+  'https://images.unsplash.com/photo-1518779578993-ec3579fee39f?auto=format&fit=crop&w=1400&q=80',
+  'https://images.unsplash.com/photo-1526378725327-2f4d8f84a3d3?auto=format&fit=crop&w=1400&q=80',
+  'https://images.unsplash.com/photo-1526378725288-6b1c1f8a3b46?auto=format&fit=crop&w=1400&q=80',
+  'https://images.unsplash.com/photo-1505685296765-3a2736de412f?auto=format&fit=crop&w=1400&q=80'
 ];
 
 export default function Index() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
+  const [selectedFeature, setSelectedFeature] = useState<any | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+
   const features = [
     {
       icon: Mic,
       title: 'Sprachsteuerung',
       description: 'Befehle per Sprache ausführen und Termine erstellen',
+      longDescription:
+        'Nutze natürliche Sprache, um Meetings zu planen, Notizen zu erstellen und E-Mails zu diktieren. Unsere Sprachsteuerung ist robust gegenüber Dialekten und optimiert für kurze, präzise Befehle.',
+      bullets: ['Terminplanung per Sprachbefehl', 'Diktat von E-Mails & Notizen', 'Mehrsprachige Erkennung'],
+      image: featureImages[0],
     },
     {
       icon: Mail,
       title: 'Ticket-Management',
       description: 'Anfragen verwalten mit KI-gestützten Antworten',
+      longDescription:
+        'Ein zentrales Ticket-System hilft Support- und Office-Teams, Anfragen effizient zu priorisieren. KI-Vorschläge sorgen für konsistente und schnelle Antworten.',
+      bullets: ['Automatische Priorisierung', 'Vorformulierte KI-Antworten', 'Zuweisung an Teammitglieder'],
+      image: featureImages[1],
     },
     {
       icon: MessageSquare,
       title: 'Chat-Integration',
       description: 'Automatische Chatbot-Antworten für häufige Fragen',
+      longDescription:
+        'Integriere den Chatbot in Website oder interne Tools. Er beantwortet FAQs, sammelt Informationen und leitet komplexe Fälle an menschliche Mitarbeiter weiter.',
+      bullets: ['Sofort-Antworten', 'Fallback an Mitarbeiter', 'Kontextbewusste Antworten'],
+      image: featureImages[2],
     },
     {
       icon: Sparkles,
       title: 'KI-Vorschläge',
       description: 'Intelligente Antwortvorschläge für schnellere Bearbeitung',
+      longDescription:
+        'Unsere KI analysiert Konversationen und schlägt passende Antwortentwürfe vor — angepasst an Tonalität, Kundenprofil und Unternehmensrichtlinien.',
+      bullets: ['Tonalität anpassbar', 'Schnelle Antwort-Templates', 'Lernfähiges System'],
+      image: featureImages[3],
     },
     {
       icon: Sparkles,
       title: 'Automatisierte Workflows',
       description: 'Routineträger automatisieren, Zeit sparen',
+      longDescription:
+        'Definiere Trigger und Aktionen für wiederkehrende Aufgaben — z. B. automatische Follow-ups, Terminbestätigungen und Datentransfer in CRMs.',
+      bullets: ['Trigger-basiert', 'Integration in Dritt-Services', 'N8N-Ready Export'],
+      image: featureImages[4],
     },
     {
       icon: Sparkles,
       title: 'Analytics & Insights',
       description: 'Metriken und KPIs zur Performance-Optimierung',
+      longDescription:
+        'Dashboard und Reports zeigen Antwortzeiten, Zufriedenheit und Topics — so erkennst du Verbesserungsbereiche und quantifizierst den Nutzen.',
+      bullets: ['Antwortzeit-Metriken', 'Themen-Cluster', 'Export für BI-Tools'],
+      image: featureImages[5],
     },
   ];
 
@@ -54,7 +84,7 @@ export default function Index() {
       {/* Hero */}
       <section className="relative overflow-hidden">
         <div
-          className="absolute inset-0 bg-[url('https://images.pexels.com/photos/373543/pexels-photo-373543.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=1080&w=1920')] bg-cover bg-center filter brightness-75 dark:brightness-50"
+          className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=1920&q=80')] bg-cover bg-center filter brightness-75 dark:brightness-50"
           aria-hidden
         />
         <div className="relative z-10 container mx-auto py-28">
@@ -123,7 +153,7 @@ export default function Index() {
             >
               <div className="relative h-48">
                 <img
-                  src={featureImages[i % featureImages.length]}
+                  src={f.image || featureImages[i % featureImages.length]}
                   alt={f.title}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   loading="lazy"
@@ -140,7 +170,15 @@ export default function Index() {
                     <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
                       <f.icon className="h-5 w-5 text-primary" />
                     </div>
-                    <span className="text-sm text-muted-foreground">Mehr erfahren</span>
+                    <button
+                      className="text-sm text-muted-foreground underline hover:no-underline"
+                      onClick={() => {
+                        setSelectedFeature(f);
+                        setModalOpen(true);
+                      }}
+                    >
+                      Mehr erfahren
+                    </button>
                   </div>
                   <Button size="sm" variant="ghost" onClick={() => navigate('/contact')}>
                     Kontakt
@@ -149,6 +187,35 @@ export default function Index() {
               </div>
             </article>
           ))}
+        </div>
+      </section>
+
+      {/* Feature Modal */}
+      <FeatureModal
+        open={modalOpen}
+        feature={selectedFeature}
+        onClose={() => {
+          setModalOpen(false);
+          setSelectedFeature(null);
+        }}
+      />
+
+      {/* Testimonials & extra content */}
+      <section className="container mx-auto py-16">
+        <h2 className="text-3xl font-bold mb-8">Was unsere Nutzer sagen</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="rounded-xl p-6 bg-card shadow">
+            <p className="text-muted-foreground mb-4">"Unsere Antwortzeiten haben sich halbiert. Die KI hilft täglich."</p>
+            <div className="text-sm font-medium">Maria H., Office Manager</div>
+          </div>
+          <div className="rounded-xl p-6 bg-card shadow">
+            <p className="text-muted-foreground mb-4">"Die Sprachfunktion spart uns viele Klicks — besonders unterwegs."</p>
+            <div className="text-sm font-medium">Lukas P., Vertriebsleiter</div>
+          </div>
+          <div className="rounded-xl p-6 bg-card shadow">
+            <p className="text-muted-foreground mb-4">"Einfache Integration in N8N – Automatisierungen laufen stabil."</p>
+            <div className="text-sm font-medium">Startup X</div>
+          </div>
         </div>
       </section>
 
