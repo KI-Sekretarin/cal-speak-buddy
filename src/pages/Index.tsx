@@ -1,19 +1,17 @@
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { Mic, Mail, MessageSquare, Sparkles } from 'lucide-react';
-import { useState } from 'react';
+import { Code, Layers, Zap, BarChart, Users, Globe } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
 import FeatureModal from '@/components/FeatureModal';
 
-// Hero and feature images — handpicked simple blue-toned images (Unsplash/Pexels) that match #2463ea.
-// These are stable external assets; for best performance download into `public/assets/` later.
-const featureImages = [
-  'https://images.unsplash.com/photo-1503264116251-35a269479413?auto=format&fit=crop&w=1400&q=80',
-  'https://images.unsplash.com/photo-1502082553048-f009c37129b9?auto=format&fit=crop&w=1400&q=80',
-  'https://images.unsplash.com/photo-1496307042754-b4aa456c4a2d?auto=format&fit=crop&w=1400&q=80',
-  'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1400&q=80',
-  'https://images.unsplash.com/photo-1505678261036-a3fcc5e884ee?auto=format&fit=crop&w=1400&q=80',
-  'https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1400&q=80'
+const features = [
+  { icon: Code, title: 'Schnelle Automatisierung', description: 'Erstelle Regeln & Workflows ohne Code' },
+  { icon: Layers, title: 'Zentrale Inbox', description: 'E-Mail, Chat & Tickets in einer Oberfläche' },
+  { icon: Zap, title: 'Integrationen', description: 'N8N, Kalender, CRMs und mehr verbinden' },
+  { icon: BarChart, title: 'Insights', description: 'Metriken & KPIs für Teams' },
+  { icon: Users, title: 'Team & Rollen', description: 'Fein granulare Berechtigungen & Audit-Logs' },
+  { icon: Globe, title: 'Mehrsprachig', description: 'Mehrere Sprachen & Tonalitäten' },
 ];
 
 export default function Index() {
@@ -23,288 +21,115 @@ export default function Index() {
   const [selectedFeature, setSelectedFeature] = useState<any | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
-  const features = [
-    {
-      icon: Mic,
-      title: 'Sprachsteuerung',
-      description: 'Befehle per Sprache ausführen und Termine erstellen',
-      longDescription:
-        'Nutze natürliche Sprache, um Meetings zu planen, Notizen zu erstellen und E-Mails zu diktieren. Unsere Sprachsteuerung ist robust gegenüber Dialekten und optimiert für kurze, präzise Befehle.',
-      bullets: ['Terminplanung per Sprachbefehl', 'Diktat von E-Mails & Notizen', 'Mehrsprachige Erkennung'],
-      image: featureImages[0],
-    },
-    {
-      icon: Mail,
-      title: 'Ticket-Management',
-      description: 'Anfragen verwalten mit KI-gestützten Antworten',
-      longDescription:
-        'Ein zentrales Ticket-System hilft Support- und Office-Teams, Anfragen effizient zu priorisieren. KI-Vorschläge sorgen für konsistente und schnelle Antworten.',
-      bullets: ['Automatische Priorisierung', 'Vorformulierte KI-Antworten', 'Zuweisung an Teammitglieder'],
-      image: featureImages[1],
-    },
-    {
-      icon: MessageSquare,
-      title: 'Chat-Integration',
-      description: 'Automatische Chatbot-Antworten für häufige Fragen',
-      longDescription:
-        'Integriere den Chatbot in Website oder interne Tools. Er beantwortet FAQs, sammelt Informationen und leitet komplexe Fälle an menschliche Mitarbeiter weiter.',
-      bullets: ['Sofort-Antworten', 'Fallback an Mitarbeiter', 'Kontextbewusste Antworten'],
-      image: featureImages[2],
-    },
-    {
-      icon: Sparkles,
-      title: 'KI-Vorschläge',
-      description: 'Intelligente Antwortvorschläge für schnellere Bearbeitung',
-      longDescription:
-        'Unsere KI analysiert Konversationen und schlägt passende Antwortentwürfe vor — angepasst an Tonalität, Kundenprofil und Unternehmensrichtlinien.',
-      bullets: ['Tonalität anpassbar', 'Schnelle Antwort-Templates', 'Lernfähiges System'],
-      image: featureImages[3],
-    },
-    {
-      icon: Sparkles,
-      title: 'Automatisierte Workflows',
-      description: 'Routineträger automatisieren, Zeit sparen',
-      longDescription:
-        'Definiere Trigger und Aktionen für wiederkehrende Aufgaben — z. B. automatische Follow-ups, Terminbestätigungen und Datentransfer in CRMs.',
-      bullets: ['Trigger-basiert', 'Integration in Dritt-Services', 'N8N-Ready Export'],
-      image: featureImages[4],
-    },
-    {
-      icon: Sparkles,
-      title: 'Analytics & Insights',
-      description: 'Metriken und KPIs zur Performance-Optimierung',
-      longDescription:
-        'Dashboard und Reports zeigen Antwortzeiten, Zufriedenheit und Topics — so erkennst du Verbesserungsbereiche und quantifizierst den Nutzen.',
-      bullets: ['Antwortzeit-Metriken', 'Themen-Cluster', 'Export für BI-Tools'],
-      image: featureImages[5],
-    },
-  ];
+  useEffect(() => {
+    const els = Array.from(document.querySelectorAll('.reveal')) as HTMLElement[];
+    if (!('IntersectionObserver' in window)) {
+      els.forEach((el) => el.classList.add('reveal-visible'));
+      return;
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('reveal-visible');
+            io.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.12 }
+    );
+    els.forEach((el) => io.observe(el));
+    return () => io.disconnect();
+  }, []);
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Hero */}
-      <section className="relative overflow-hidden">
-        <div
-          className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1503264116251-35a269479413?auto=format&fit=crop&w=1920&q=80')] bg-cover bg-center filter brightness-70 dark:brightness-50"
-          aria-hidden
-        />
-        <div className="absolute inset-0 bg-[rgba(36,99,234,0.36)] mix-blend-multiply" aria-hidden />
+    <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-950 text-slate-100">
+      <header className="relative">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-[#071028] to-[#021026] opacity-95" />
         <div className="relative z-10 container mx-auto py-28">
-          <div className="bg-white/60 dark:bg-black/50 backdrop-blur-md rounded-3xl p-10 md:p-16 shadow-glow">
-            <div className="grid lg:grid-cols-2 gap-8 items-center">
-              <div className="space-y-6">
-                <div className="inline-flex items-center gap-3 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium">
-                  <Sparkles className="h-5 w-5" />
-                  Premium KI Assistent
-                </div>
-                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
-                  Deine digitale
-                  <span className="bg-gradient-primary bg-clip-text text-transparent"> KI-Sekretärin</span>
-                </h1>
-                <p className="text-lg text-muted-foreground max-w-2xl">
-                  Intelligente Automatisierung für Termine, Anfragen und Kommunikation —
-                  KI-gestützte Antwortvorlagen, Multichannel-Integration und Workflow-Automatisierung,
-                  schnell eingerichtet und datenschutzbewusst umgesetzt.
-                </p>
-                <div className="flex flex-wrap gap-4">
-                  {user ? (
-                    <Button onClick={() => navigate('/admin')} size="lg" className="shadow-elegant">
-                      Zum Dashboard
-                    </Button>
-                  ) : (
-                    <>
-                      <Button onClick={() => navigate('/register')} size="lg" className="shadow-elegant">
-                        Kostenlos starten
-                      </Button>
-                      <Button onClick={() => navigate('/login')} size="lg" variant="outline">
-                        Anmelden
-                      </Button>
-                    </>
-                  )}
-                </div>
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div className="space-y-6">
+              <div className="inline-flex items-center gap-3 bg-white/5 px-4 py-2 rounded-full text-sm text-slate-200">
+                Developer-first · KI-Sekretärin
               </div>
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight">
+                Automatisiere Kommunikation —
+                <span className="text-[#2463ea]"> build faster, ship smarter</span>
+              </h1>
+              <p className="text-lg text-slate-300 max-w-2xl">
+                Eine moderne Assistenz für Teams: Tickets, Termine, Chat und Workflows an einem Ort —
+                optimiert für Produktivität und Developer‑workflows.
+              </p>
 
-              <div className="hidden md:block">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="rounded-xl overflow-hidden shadow-lg transform hover:scale-105 transition-all duration-400">
-                    <img loading="lazy" src={featureImages[0]} alt="feature" className="w-full h-48 object-cover" />
+              <div className="flex flex-wrap gap-4">
+                <Button size="lg" className="bg-[#2463ea] hover:brightness-110 text-white" onClick={() => navigate('/register')}>
+                  Kostenlos testen
+                </Button>
+                <Button size="lg" variant="outline" onClick={() => navigate('/help')}>
+                  Dokumentation
+                </Button>
+              </div>
+            </div>
+
+            <div>
+              <div className="rounded-2xl overflow-hidden shadow-2xl ring-1 ring-white/6 bg-[#041024]">
+                <div className="p-6 bg-gradient-to-b from-[#041022] to-[#062036]">
+                  <div className="flex items-center justify-between text-sm text-slate-400">
+                    <div>Project: Acme</div>
+                    <div>Mode: Assist</div>
                   </div>
-                  <div className="rounded-xl overflow-hidden shadow-lg transform hover:scale-105 transition-all duration-400">
-                    <img loading="lazy" src={featureImages[1]} alt="feature" className="w-full h-48 object-cover" />
-                  </div>
-                  <div className="rounded-xl overflow-hidden shadow-lg transform hover:scale-105 transition-all duration-400">
-                    <img loading="lazy" src={featureImages[2]} alt="feature" className="w-full h-48 object-cover" />
-                  </div>
-                  <div className="rounded-xl overflow-hidden shadow-lg transform hover:scale-105 transition-all duration-400">
-                    <img loading="lazy" src={featureImages[3]} alt="feature" className="w-full h-48 object-cover" />
+                  <pre className="mt-4 bg-[#061323] text-[#bfe1ff] rounded-md p-4 text-sm overflow-auto h-56">
+{`# Assistent: Neues Meeting anlegen
+User: Morgen 10:00
+Assistant: Meeting erstellt — Einladungen versendet
+
+# Ticket: Kunde X
+Assistant: Vorschlag für Antwort generiert (Tonalität: freundlich)`}
+                  </pre>
+                  <div className="mt-4 flex items-center gap-3">
+                    <Button size="sm" className="bg-[#1f6ae0] text-white">Integrate</Button>
+                    <Button size="sm" variant="outline">Open Dashboard</Button>
                   </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </section>
+      </header>
 
-      {/* Features Card Grid */}
-      <section className="container mx-auto py-20">
-        <h2 className="text-3xl font-bold mb-8">Features</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          {features.map((f, i) => (
-            <article
-              key={i}
-              className="group rounded-2xl overflow-hidden border bg-card hover:shadow-2xl transition-transform transform hover:-translate-y-2"
-            >
-              <div className="relative h-48">
-                <img
-                  src={f.image || featureImages[i % featureImages.length]}
-                  alt={f.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  loading="lazy"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-                <div className="absolute left-4 bottom-4">
-                  <h3 className="text-white text-lg font-semibold">{f.title}</h3>
-                </div>
-              </div>
-              <div className="p-6">
-                <p className="text-sm text-muted-foreground mb-4">{f.description}</p>
-                <div className="flex items-center justify-between">
-                  <div className="inline-flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <f.icon className="h-5 w-5 text-primary" />
-                    </div>
-                    <button
-                      className="text-sm text-muted-foreground underline hover:no-underline"
-                      onClick={() => {
-                        setSelectedFeature(f);
-                        setModalOpen(true);
-                      }}
-                    >
-                      Mehr erfahren
-                    </button>
+      <main>
+        <section className="container mx-auto py-20">
+          <h2 className="text-3xl font-bold mb-8">Wofür Teams uns nutzen</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            {features.map((f, i) => (
+              <div key={i} className="reveal rounded-2xl p-6 bg-card hover:shadow-2xl transition-transform hover:-translate-y-2">
+                <div className="flex items-start gap-4">
+                  <div className="h-12 w-12 rounded-lg flex items-center justify-center bg-gradient-to-br from-[#123a8b] to-[#2f7be6] text-white">
+                    <f.icon className="h-6 w-6" />
                   </div>
-                  <Button size="sm" variant="ghost" onClick={() => navigate('/contact')}>
-                    Kontakt
-                  </Button>
+                  <div>
+                    <h3 className="text-lg font-semibold">{f.title}</h3>
+                    <p className="text-sm text-muted-foreground">{f.description}</p>
+                  </div>
                 </div>
               </div>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      {/* Feature Modal */}
-      <FeatureModal
-        open={modalOpen}
-        feature={selectedFeature}
-        onClose={() => {
-          setModalOpen(false);
-          setSelectedFeature(null);
-        }}
-      />
-
-      {/* How it works */}
-      <section className="container mx-auto py-16">
-        <h2 className="text-3xl font-bold mb-8">So funktioniert's</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="rounded-xl p-6 bg-card shadow">
-            <h3 className="font-semibold mb-2">1. Verbinden</h3>
-            <p className="text-muted-foreground">Verbinde deine Kanäle (E-Mail, Chat, Kalender) mit wenigen Klicks.</p>
+            ))}
           </div>
-          <div className="rounded-xl p-6 bg-card shadow">
-            <h3 className="font-semibold mb-2">2. Automatisieren</h3>
-            <p className="text-muted-foreground">Lege Regeln und Workflows fest – wiederkehrende Aufgaben laufen automatisch.</p>
-          </div>
-          <div className="rounded-xl p-6 bg-card shadow">
-            <h3 className="font-semibold mb-2">3. Optimieren</h3>
-            <p className="text-muted-foreground">Nutze Insights und KI-Vorschläge, um Prozesse kontinuierlich zu verbessern.</p>
-          </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Pricing teaser */}
-      <section className="bg-gradient-to-tr from-primary/6 to-transparent py-16">
-        <div className="container mx-auto text-center">
-          <h2 className="text-3xl font-bold mb-4">Preise, die mitwachsen</h2>
-          <p className="text-muted-foreground mb-8">Kostenlose Testphase, transparente Pakete und flexible Team-Optionen.</p>
-          <div className="mx-auto max-w-4xl grid grid-cols-1 sm:grid-cols-3 gap-6">
-            <div className="p-6 rounded-xl bg-card shadow">
-              <div className="text-xl font-semibold mb-2">Starter</div>
-              <div className="text-2xl font-bold mb-4">Kostenlos</div>
-              <ul className="text-sm text-muted-foreground mb-4">
-                <li>Basale KI-Funktionen</li>
-                <li>1 Projekt</li>
-              </ul>
-              <Button variant="outline">Loslegen</Button>
+        <section className="py-12 bg-gradient-to-r from-slate-900 to-slate-950">
+          <div className="container mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+            <div>
+              <h3 className="text-2xl font-bold">Bereit, produktiver zu arbeiten?</h3>
+              <p className="text-slate-300">Teste kostenlos — keine Kreditkarte erforderlich.</p>
             </div>
-            <div className="p-6 rounded-xl bg-primary text-white shadow-lg">
-              <div className="text-xl font-semibold mb-2">Business</div>
-              <div className="text-2xl font-bold mb-4">€29 / Monat</div>
-              <ul className="text-sm mb-4">
-                <li>Alle Kernfunktionen</li>
-                <li>Team-Accounts</li>
-              </ul>
-              <Button>Jetzt testen</Button>
-            </div>
-            <div className="p-6 rounded-xl bg-card shadow">
-              <div className="text-xl font-semibold mb-2">Enterprise</div>
-              <div className="text-2xl font-bold mb-4">Auf Anfrage</div>
-              <ul className="text-sm text-muted-foreground mb-4">
-                <li>Individuelle Integrationen</li>
-                <li>Unterstützung & SLA</li>
-              </ul>
-              <Button variant="ghost">Kontakt</Button>
+            <div className="flex gap-4">
+              <Button className="bg-[#2463ea] text-white">Kostenlos testen</Button>
+              <Button variant="outline">Kontakt</Button>
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* Testimonials */}
-      <section className="container mx-auto py-16">
-        <h2 className="text-3xl font-bold mb-8">Was unsere Nutzer sagen</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="rounded-xl p-6 bg-card shadow">
-            <p className="text-muted-foreground mb-4">"Unsere Antwortzeiten haben sich halbiert. Die KI hilft täglich."</p>
-            <div className="text-sm font-medium">Maria H., Office Manager</div>
-          </div>
-          <div className="rounded-xl p-6 bg-card shadow">
-            <p className="text-muted-foreground mb-4">"Die Sprachfunktion spart uns viele Klicks — besonders unterwegs."</p>
-            <div className="text-sm font-medium">Lukas P., Vertriebsleiter</div>
-          </div>
-          <div className="rounded-xl p-6 bg-card shadow">
-            <p className="text-muted-foreground mb-4">"Einfache Integration in N8N – Automatisierungen laufen stabil."</p>
-            <div className="text-sm font-medium">Startup X</div>
-          </div>
-        </div>
-      </section>
-
-      {/* FAQ */}
-      <section className="container mx-auto py-16">
-        <h2 className="text-3xl font-bold mb-8">Häufige Fragen</h2>
-        <div className="space-y-4 max-w-3xl">
-          <details className="p-4 bg-card rounded-lg">
-            <summary className="font-medium">Ist das System DSGVO-konform?</summary>
-            <p className="mt-2 text-muted-foreground">Wir bieten DSGVO-konforme Speicherung und rollenbasierte Zugriffe; für Enterprise-Kunden können weitere Maßnahmen vereinbart werden.</p>
-          </details>
-          <details className="p-4 bg-card rounded-lg">
-            <summary className="font-medium">Welche Integrationen gibt es?</summary>
-            <p className="mt-2 text-muted-foreground">Kalender, E-Mail, Zapier, N8N und gängige CRMs; individuelle Integrationen sind möglich.</p>
-          </details>
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="bg-gradient-to-tr from-primary/10 to-accent/10 py-16 mt-20">
-        <div className="container mx-auto text-center">
-          <h2 className="text-3xl font-bold mb-4">Bereit, Zeit zu sparen?</h2>
-          <p className="text-lg text-muted-foreground mb-6">Teste die KI-Sekretärin kostenlos und sieh selbst.</p>
-          {!user && (
-            <Button onClick={() => navigate('/register')} size="lg" className="shadow-elegant">
-              Kostenlos testen
-            </Button>
-          )}
-        </div>
-      </section>
+        </section>
+      </main>
     </div>
   );
 }
