@@ -181,7 +181,7 @@ Assistant: Vorschlag für Antwort generiert (Tonalität: freundlich)`}
                   setSelectedFeature(f);
                   setModalOpen(true);
                 }}
-                className="reveal text-left rounded-2xl p-6 bg-card hover:shadow-2xl transition-transform hover:-translate-y-2 focus:outline-none"
+                className="reveal text-left rounded-2xl p-6 bg-slate-800/90 text-slate-100 hover:shadow-2xl transition-transform hover:-translate-y-2 focus:outline-none"
               >
                 <div className="flex items-start gap-4">
                   <div className="h-12 w-12 rounded-lg flex items-center justify-center bg-gradient-to-br from-[#123a8b] to-[#2f7be6] text-white">
@@ -189,7 +189,7 @@ Assistant: Vorschlag für Antwort generiert (Tonalität: freundlich)`}
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold">{f.title}</h3>
-                    <p className="text-sm text-muted-foreground">{f.description}</p>
+                    <p className="text-sm text-slate-200">{f.description}</p>
                   </div>
                 </div>
               </button>
@@ -225,9 +225,9 @@ Assistant: Vorschlag für Antwort generiert (Tonalität: freundlich)`}
           <h3 className="text-2xl font-bold mb-6">Was Kunden sagen</h3>
           <div className="grid md:grid-cols-2 gap-6">
             {testimonials.map((t, idx) => (
-              <div key={idx} className="rounded-2xl p-6 bg-card">
-                <blockquote className="text-slate-300">“{t.quote}”</blockquote>
-                <div className="mt-4 text-sm text-slate-400">— {t.name}</div>
+              <div key={idx} className="rounded-2xl p-6 bg-slate-800/90 text-slate-100">
+                <blockquote className="text-slate-100">“{t.quote}”</blockquote>
+                <div className="mt-4 text-sm text-slate-300">— {t.name}</div>
               </div>
             ))}
           </div>
