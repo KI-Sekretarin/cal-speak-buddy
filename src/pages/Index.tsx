@@ -2,18 +2,19 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { Mic, Mail, MessageSquare, Sparkles } from 'lucide-react';
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
 import FeatureModal from '@/components/FeatureModal';
 
-  // Minimal gradient artwork per feature (no animals) to match primary color #2463ea
-  const cardGradients = [
-    'linear-gradient(135deg, rgba(36,99,234,0.14), rgba(90,162,255,0.04))',
-    'linear-gradient(135deg, rgba(36,99,234,0.10), rgba(36,99,234,0.02))',
-    'linear-gradient(135deg, rgba(90,162,255,0.12), rgba(36,99,234,0.03))',
-    'linear-gradient(135deg, rgba(36,99,234,0.08), rgba(90,162,255,0.02))',
-    'linear-gradient(135deg, rgba(36,99,234,0.14), rgba(90,162,255,0.06))',
-    'linear-gradient(135deg, rgba(36,99,234,0.12), rgba(90,162,255,0.04))',
-  ];
+// Hero and feature images — handpicked simple blue-toned images (Unsplash/Pexels) that match #2463ea.
+// These are stable external assets; for best performance download into `public/assets/` later.
+const featureImages = [
+  'https://images.unsplash.com/photo-1503264116251-35a269479413?auto=format&fit=crop&w=1400&q=80',
+  'https://images.unsplash.com/photo-1502082553048-f009c37129b9?auto=format&fit=crop&w=1400&q=80',
+  'https://images.unsplash.com/photo-1496307042754-b4aa456c4a2d?auto=format&fit=crop&w=1400&q=80',
+  'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1400&q=80',
+  'https://images.unsplash.com/photo-1505678261036-a3fcc5e884ee?auto=format&fit=crop&w=1400&q=80',
+  'https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1400&q=80'
+];
 
 export default function Index() {
   const navigate = useNavigate();
@@ -21,7 +22,6 @@ export default function Index() {
 
   const [selectedFeature, setSelectedFeature] = useState<any | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const [bgPos, setBgPos] = useState('50% 50%');
 
   const features = [
     {
@@ -80,51 +80,15 @@ export default function Index() {
     },
   ];
 
-  // Simple scroll reveal for feature cards
-  useEffect(() => {
-    const els = Array.from(document.querySelectorAll('.reveal')) as HTMLElement[];
-    if (!('IntersectionObserver' in window)) {
-      els.forEach((el) => el.classList.add('reveal-visible'));
-      return;
-    }
-
-    const io = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('reveal-visible');
-            io.unobserve(entry.target);
-          }
-        });
-      },
-      { threshold: 0.12 }
-    );
-
-    els.forEach((el) => io.observe(el));
-    return () => io.disconnect();
-  }, []);
-
-  // hero parallax mouse move
-  const onHeroMove = (e: React.MouseEvent) => {
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width - 0.5) * 20; // -10..10
-    const y = ((e.clientY - rect.top) / rect.height - 0.5) * 10; // -5..5
-    setBgPos(`${50 + x}% ${50 + y}%`);
-  };
-
   return (
     <div className="min-h-screen bg-background">
       {/* Hero */}
-      <section className="relative overflow-hidden" onMouseMove={onHeroMove}>
+      <section className="relative overflow-hidden">
         <div
-          className="absolute inset-0 bg-cover bg-center filter brightness-70 dark:brightness-50"
-          style={{
-            backgroundImage: `url('https://images.pexels.com/photos/373543/pexels-photo-373543.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=1080&w=1920')`,
-            backgroundPosition: bgPos,
-          }}
+          className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1503264116251-35a269479413?auto=format&fit=crop&w=1920&q=80')] bg-cover bg-center filter brightness-70 dark:brightness-50"
           aria-hidden
         />
-        <div className="absolute inset-0 bg-[rgba(36,99,234,0.32)] mix-blend-multiply" aria-hidden />
+        <div className="absolute inset-0 bg-[rgba(36,99,234,0.36)] mix-blend-multiply" aria-hidden />
         <div className="relative z-10 container mx-auto py-28">
           <div className="bg-white/60 dark:bg-black/50 backdrop-blur-md rounded-3xl p-10 md:p-16 shadow-glow">
             <div className="grid lg:grid-cols-2 gap-8 items-center">
@@ -160,22 +124,22 @@ export default function Index() {
                 </div>
               </div>
 
-                      <div className="hidden md:block">
-                        <div className="grid grid-cols-2 gap-4">
-                          {cardGradients.slice(0, 4).map((g, idx) => (
-                            <div
-                              key={idx}
-                              className="rounded-xl overflow-hidden shadow-lg transform hover:scale-105 transition-all duration-400"
-                            >
-                              <div
-                                aria-hidden
-                                className="w-full h-48"
-                                style={{ background: g }}
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      </div>
+              <div className="hidden md:block">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="rounded-xl overflow-hidden shadow-lg transform hover:scale-105 transition-all duration-400">
+                    <img loading="lazy" src={featureImages[0]} alt="feature" className="w-full h-48 object-cover" />
+                  </div>
+                  <div className="rounded-xl overflow-hidden shadow-lg transform hover:scale-105 transition-all duration-400">
+                    <img loading="lazy" src={featureImages[1]} alt="feature" className="w-full h-48 object-cover" />
+                  </div>
+                  <div className="rounded-xl overflow-hidden shadow-lg transform hover:scale-105 transition-all duration-400">
+                    <img loading="lazy" src={featureImages[2]} alt="feature" className="w-full h-48 object-cover" />
+                  </div>
+                  <div className="rounded-xl overflow-hidden shadow-lg transform hover:scale-105 transition-all duration-400">
+                    <img loading="lazy" src={featureImages[3]} alt="feature" className="w-full h-48 object-cover" />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -190,12 +154,14 @@ export default function Index() {
               key={i}
               className="group rounded-2xl overflow-hidden border bg-card hover:shadow-2xl transition-transform transform hover:-translate-y-2"
             >
-                <div className="relative h-48">
-                <div
-                  className="w-full h-full group-hover:scale-105 transition-transform duration-500"
-                  style={{ background: cardGradients[i % cardGradients.length] }}
+              <div className="relative h-48">
+                <img
+                  src={f.image || featureImages[i % featureImages.length]}
+                  alt={f.title}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  loading="lazy"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
                 <div className="absolute left-4 bottom-4">
                   <h3 className="text-white text-lg font-semibold">{f.title}</h3>
                 </div>
