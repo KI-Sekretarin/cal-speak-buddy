@@ -5,14 +5,15 @@ import { Mic, Mail, MessageSquare, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import FeatureModal from '@/components/FeatureModal';
 
-// Hero and feature images — switched to more AI/creative/unsplash images to match the new design
+// Hero and feature images — switched to AI-generated images using Pollinations (prompt-based)
+// These endpoints generate images on-the-fly from the prompt. If you prefer stable, download and host images locally.
 const featureImages = [
-  'https://images.unsplash.com/photo-1542831371-d531d36971e6?auto=format&fit=crop&w=1400&q=80',
-  'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=1400&q=80',
-  'https://images.unsplash.com/photo-1518779578993-ec3579fee39f?auto=format&fit=crop&w=1400&q=80',
-  'https://images.unsplash.com/photo-1526378725327-2f4d8f84a3d3?auto=format&fit=crop&w=1400&q=80',
-  'https://images.unsplash.com/photo-1526378725288-6b1c1f8a3b46?auto=format&fit=crop&w=1400&q=80',
-  'https://images.unsplash.com/photo-1505685296765-3a2736de412f?auto=format&fit=crop&w=1400&q=80'
+  'https://image.pollinations.ai/prompt/AI%20assistant%20in%20a%20modern%20office%20environment%2C%20soft%20pastel%20colors%2C%20high%20detail%2C%20isometric',
+  'https://image.pollinations.ai/prompt/automated%20ticketing%20system%20visualization%2C%20clean%20UI%2C%20data%20flow%2C%20illustration',
+  'https://image.pollinations.ai/prompt/chatbot%20integration%20with%20web%20chat%20widget%2C%20friendly%20ai%20character%2C%20vector%20art',
+  'https://image.pollinations.ai/prompt/ai%20suggestions%20and%20templates%2C%20digital%20assistant%2C%20futuristic%20UI',
+  'https://image.pollinations.ai/prompt/automations%20and%20workflows%20connected%20by%20lines%2C%20business%20process%2C%20isometric',
+  'https://image.pollinations.ai/prompt/analytics%20dashboard%20with%20charts%20and%20insights%2C%20modern%20ui%2C%20illustration'
 ];
 
 export default function Index() {
@@ -76,6 +77,52 @@ export default function Index() {
         'Dashboard und Reports zeigen Antwortzeiten, Zufriedenheit und Topics — so erkennst du Verbesserungsbereiche und quantifizierst den Nutzen.',
       bullets: ['Antwortzeit-Metriken', 'Themen-Cluster', 'Export für BI-Tools'],
       image: featureImages[5],
+    },
+    // zusätzliche Features — erweitert basierend auf Wunsch des Nutzers
+    {
+      icon: Sparkles,
+      title: 'Onboarding-Assistent',
+      description: 'Schnelle Einrichtung & Schulung für neue Teammitglieder',
+      longDescription:
+        'Ein interaktiver Onboarding-Assistent führt neue Mitarbeiter durch Prozesse, Standardantworten und Workflows — reduziert Schulungsaufwand.',
+      bullets: ['Interaktive Tutorials', 'Kontextbezogene Hilfen', 'Rollenspezifische Einstellungen'],
+      image: 'https://image.pollinations.ai/prompt/onboarding%20assistant%20interactive%20tutorial%2C%20digital%20illustration',
+    },
+    {
+      icon: Sparkles,
+      title: 'Multichannel-Support',
+      description: 'E-Mails, Chat, Telefon & Social in einer Oberfläche',
+      longDescription:
+        'Vereine alle Kontaktkanäle in einer Ansicht, damit Antworten kohärent bleiben und keine Anfrage verloren geht.',
+      bullets: ['Kanalübergreifende Historie', 'Zentrale Suche', 'Antwortvorlagen je Kanal'],
+      image: 'https://image.pollinations.ai/prompt/multichannel%20support%20unified%20inbox%2C%20isometric%20illustration',
+    },
+    {
+      icon: Sparkles,
+      title: 'SLA & Priorisierung',
+      description: 'Service-Level-Agreements überwachen und einhalten',
+      longDescription:
+        'Definiere SLAs, überwache Fristen und erhalte Warnungen bei Überschreitungen, um Kundenzufriedenheit sicherzustellen.',
+      bullets: ['Echtzeit-Warnungen', 'SLA-basierte Priorität', 'Reporting'],
+      image: 'https://image.pollinations.ai/prompt/SLA%20monitoring%20dashboard%2C%20data%20visualization',
+    },
+    {
+      icon: Sparkles,
+      title: 'Vorlagen & Snippets',
+      description: 'Schnellantworten und individualisierbare Templates',
+      longDescription:
+        'Erstelle und teile Vorlagen, die Mitarbeiter als Basis verwenden können — konsistente Kommunikation leicht gemacht.',
+      bullets: ['Template-Bibliothek', 'Personalisierte Platzhalter', 'Teamfreigaben'],
+      image: 'https://image.pollinations.ai/prompt/email%20templates%20and%20snippets%2C%20vector%20art',
+    },
+    {
+      icon: Sparkles,
+      title: 'Datenschutz & Compliance',
+      description: 'DSGVO-konforme Speicherung und Zugriffskontrolle',
+      longDescription:
+        'Fein granulare Berechtigungen und Audit-Logs sorgen dafür, dass Datenverarbeitung transparent und regelkonform bleibt.',
+      bullets: ['Audit-Logs', 'Rollenbasierter Zugriff', 'Datenverschlüsselung'],
+      image: 'https://image.pollinations.ai/prompt/data%20privacy%20and%20compliance%20illustration%2C%20secure%20shield',
     },
   ];
 
