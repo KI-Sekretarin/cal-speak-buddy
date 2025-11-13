@@ -5,15 +5,15 @@ import { Mic, Mail, MessageSquare, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import FeatureModal from '@/components/FeatureModal';
 
-// Hero and feature images — AI prompts tuned to primary color #2463ea for a simple, modern look.
-// Recommend generating and hosting final assets in `public/` for stability and performance.
+// Hero and feature images — handpicked simple blue-toned images (Unsplash/Pexels) that match #2463ea.
+// These are stable external assets; for best performance download into `public/assets/` later.
 const featureImages = [
-  'https://image.pollinations.ai/prompt/minimal%20illustration%20AI%20assistant%20%232463ea%20palette%20flat%20icons%20clean',
-  'https://image.pollinations.ai/prompt/minimal%20illustration%20ticketing%20system%20%232463ea%20palette%20flat%20icons',
-  'https://image.pollinations.ai/prompt/minimal%20chatbot%20widget%20illustration%20%232463ea%20palette%20vector',
-  'https://image.pollinations.ai/prompt/minimal%20ai%20suggestions%20illustration%20%232463ea%20palette%20flat',
-  'https://image.pollinations.ai/prompt/minimal%20workflows%20automation%20illustration%20%232463ea%20palette%20isometric',
-  'https://image.pollinations.ai/prompt/minimal%20analytics%20dashboard%20illustration%20%232463ea%20palette%20clean'
+  'https://images.unsplash.com/photo-1503264116251-35a269479413?auto=format&fit=crop&w=1400&q=80',
+  'https://images.unsplash.com/photo-1502082553048-f009c37129b9?auto=format&fit=crop&w=1400&q=80',
+  'https://images.unsplash.com/photo-1496307042754-b4aa456c4a2d?auto=format&fit=crop&w=1400&q=80',
+  'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1400&q=80',
+  'https://images.unsplash.com/photo-1505678261036-a3fcc5e884ee?auto=format&fit=crop&w=1400&q=80',
+  'https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1400&q=80'
 ];
 
 export default function Index() {
@@ -85,7 +85,7 @@ export default function Index() {
       {/* Hero */}
       <section className="relative overflow-hidden">
         <div
-          className="absolute inset-0 bg-[url('https://image.pollinations.ai/prompt/modern%20abstract%20hero%20background%20%232463ea%20gradient%20glassmorphism%20minimal%20shapes%20soft%20glow')] bg-cover bg-center filter brightness-70 dark:brightness-50"
+          className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1503264116251-35a269479413?auto=format&fit=crop&w=1920&q=80')] bg-cover bg-center filter brightness-70 dark:brightness-50"
           aria-hidden
         />
         <div className="absolute inset-0 bg-[rgba(36,99,234,0.36)] mix-blend-multiply" aria-hidden />
