@@ -1,15 +1,6 @@
 project_id = "bqwfcixtbnodxuoixxkk"
 
-[functions.speech-to-text]
-verify_jwt = false
-
-[functions.voice-commands]
-verify_jwt = false
-
 [functions.inquiries]
-verify_jwt = false
-
-[functions.ai-responses]
 verify_jwt = false
 
 [functions.send-inquiry-response]

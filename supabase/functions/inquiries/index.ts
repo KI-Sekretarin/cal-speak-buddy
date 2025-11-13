@@ -63,16 +63,18 @@ serve(async (req) => {
         .insert({
           name: body.name,
           email: body.email,
+          phone: body.phone,
           subject: body.subject,
           message: body.message,
           category: body.category || 'general',
+          user_id: body.user_id,
         })
         .select()
         .single();
 
       if (error) throw error;
 
-      // Trigger n8n webhook
+      // Trigger n8n webhook for AI categorization and response generation
       try {
         await fetch('https://kisekretaerin.app.n8n.cloud/webhook-test/new-inquiry', {
           method: 'POST',
@@ -80,7 +82,8 @@ serve(async (req) => {
           body: JSON.stringify(data),
         });
       } catch (webhookError) {
-        console.error('Webhook error:', webhookError);
+        console.error('n8n webhook error:', webhookError);
+        // Continue even if webhook fails
       }
 
       return new Response(JSON.stringify(data), {
