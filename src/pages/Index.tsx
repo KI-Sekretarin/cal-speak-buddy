@@ -213,9 +213,10 @@ export default function Index() {
 
             {/* Right side - Single large uploaded image for clearer hero (replace public/uploaded-hero.jpg with your uploaded file) */}
             <div className="hidden lg:flex justify-center">
-              <div className="relative w-full max-w-md h-[520px] rounded-3xl overflow-hidden shadow-2xl transform hover:scale-[1.02] transition-all duration-700 border border-white/10">
+              {/* Vergrößertes Hero-Bild: breiter für bessere Lesbarkeit der eingebetteten Texte */}
+              <div className="relative w-full max-w-3xl h-[560px] rounded-3xl overflow-hidden shadow-2xl transform hover:scale-[1.02] transition-all duration-700 border border-white/10">
                 <img loading="lazy" src={uploadedHero} alt="Produktbild" className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" aria-hidden />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" aria-hidden />
               </div>
             </div>
           </div>
