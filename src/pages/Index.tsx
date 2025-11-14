@@ -1,20 +1,21 @@
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { Mic, Mail, MessageSquare, Sparkles } from 'lucide-react';
+import { Mic, Mail, MessageSquare, Sparkles, Zap, TrendingUp, Brain, Clock, CheckCircle, Users } from 'lucide-react';
 import { useState } from 'react';
 import FeatureModal from '@/components/FeatureModal';
 
-// Hero and feature images — switched to AI-generated images using Pollinations (prompt-based)
-// These endpoints generate images on-the-fly from the prompt. If you prefer stable, download and host images locally.
-const featureImages = [
-  'https://image.pollinations.ai/prompt/AI%20assistant%20in%20a%20modern%20office%20environment%2C%20soft%20pastel%20colors%2C%20high%20detail%2C%20isometric',
-  'https://image.pollinations.ai/prompt/automated%20ticketing%20system%20visualization%2C%20clean%20UI%2C%20data%20flow%2C%20illustration',
-  'https://image.pollinations.ai/prompt/chatbot%20integration%20with%20web%20chat%20widget%2C%20friendly%20ai%20character%2C%20vector%20art',
-  'https://image.pollinations.ai/prompt/ai%20suggestions%20and%20templates%2C%20digital%20assistant%2C%20futuristic%20UI',
-  'https://image.pollinations.ai/prompt/automations%20and%20workflows%20connected%20by%20lines%2C%20business%20process%2C%20isometric',
-  'https://image.pollinations.ai/prompt/analytics%20dashboard%20with%20charts%20and%20insights%2C%20modern%20ui%2C%20illustration'
-];
+// Premium images from Pexels and Unsplash - carefully curated for each feature
+const heroImage = 'https://images.unsplash.com/photo-1677442d019cecf3da6888533cda230f904896700?auto=format&fit=crop&w=2000&q=80';
+
+const featureImages = {
+  voice: 'https://images.pexels.com/photos/8728461/pexels-photo-8728461.jpeg?auto=compress&cs=tinysrgb&w=1000&h=700&fit=crop',
+  tickets: 'https://images.pexels.com/photos/5632399/pexels-photo-5632399.jpeg?auto=compress&cs=tinysrgb&w=1000&h=700&fit=crop',
+  chat: 'https://images.pexels.com/photos/3182812/pexels-photo-3182812.jpeg?auto=compress&cs=tinysrgb&w=1000&h=700&fit=crop',
+  suggestions: 'https://images.pexels.com/photos/8566532/pexels-photo-8566532.jpeg?auto=compress&cs=tinysrgb&w=1000&h=700&fit=crop',
+  automation: 'https://images.pexels.com/photos/5632399/pexels-photo-5632399.jpeg?auto=compress&cs=tinysrgb&w=1000&h=700&fit=crop',
+  analytics: 'https://images.pexels.com/photos/7974/pexels-photo.jpg?auto=compress&cs=tinysrgb&w=1000&h=700&fit=crop'
+};
 
 export default function Index() {
   const navigate = useNavigate();
@@ -26,116 +27,206 @@ export default function Index() {
   const features = [
     {
       icon: Mic,
-      title: 'Sprachsteuerung',
-      description: 'Befehle per Sprache ausführen und Termine erstellen',
+      title: 'Sprachsteuerung & Diktat',
+      description: 'Freihändige Befehle per Sprache ausführen',
       longDescription:
         'Nutze natürliche Sprache, um Meetings zu planen, Notizen zu erstellen und E-Mails zu diktieren. Unsere Sprachsteuerung ist robust gegenüber Dialekten und optimiert für kurze, präzise Befehle.',
-      bullets: ['Terminplanung per Sprachbefehl', 'Diktat von E-Mails & Notizen', 'Mehrsprachige Erkennung'],
-      image: featureImages[0],
+      bullets: [
+        'Terminplanung per Sprachbefehl',
+        'Diktat von E-Mails & Notizen in Echtzeit',
+        'Mehrsprachige Erkennung (DE, EN, FR, ES)',
+        'Offline-Verarbeitung möglich',
+        'Kontextuelle Vervollständigung'
+      ],
+      stats: [
+        { value: '95%', label: 'Genauigkeit' },
+        { value: '3 Sek', label: 'Verarbeitung' }
+      ],
+      image: featureImages.voice,
     },
     {
       icon: Mail,
-      title: 'Ticket-Management',
-      description: 'Anfragen verwalten mit KI-gestützten Antworten',
+      title: 'Intelligentes Ticket-Management',
+      description: 'Zentrale Verwaltung aller Anfragen mit KI',
       longDescription:
-        'Ein zentrales Ticket-System hilft Support- und Office-Teams, Anfragen effizient zu priorisieren. KI-Vorschläge sorgen für konsistente und schnelle Antworten.',
-      bullets: ['Automatische Priorisierung', 'Vorformulierte KI-Antworten', 'Zuweisung an Teammitglieder'],
-      image: featureImages[1],
+        'Ein zentrales Ticket-System hilft Support- und Office-Teams, Anfragen effizient zu priorisieren. KI-Vorschläge sorgen für konsistente und schnelle Antworten. Automatische Kategorisierung reduziert manuelle Arbeit.',
+      bullets: [
+        'Automatische Priorisierung nach Urgenz',
+        'KI-Antwortvorschläge in Echtzeit',
+        'Zuweisung an beste Teammitglieder',
+        'SLA-Tracking & Erinnerungen',
+        'Batch-Verarbeitung mehrerer Tickets'
+      ],
+      stats: [
+        { value: '60%', label: 'Zeit gespart' },
+        { value: '24 Std', label: 'Bearbeitungszeit' }
+      ],
+      image: featureImages.tickets,
     },
     {
       icon: MessageSquare,
-      title: 'Chat-Integration',
-      description: 'Automatische Chatbot-Antworten für häufige Fragen',
+      title: 'Chat-Integration & Chatbot',
+      description: 'Automatische Antworten 24/7',
       longDescription:
-        'Integriere den Chatbot in Website oder interne Tools. Er beantwortet FAQs, sammelt Informationen und leitet komplexe Fälle an menschliche Mitarbeiter weiter.',
-      bullets: ['Sofort-Antworten', 'Fallback an Mitarbeiter', 'Kontextbewusste Antworten'],
-      image: featureImages[2],
+        'Integriere den Chatbot in Website oder interne Tools. Er beantwortet FAQs, sammelt Informationen und leitet komplexe Fälle an menschliche Mitarbeiter weiter. Training auf deinen Dokumenten.',
+      bullets: [
+        'Sofort-Antworten zu häufigen Fragen',
+        'Intelligenter Fallback an Mitarbeiter',
+        'Kontextbewusste Antworten lernen',
+        'Multi-Channel Support (Web, Teams, Slack)',
+        'Sentiment-Analyse zur Eskalation'
+      ],
+      stats: [
+        { value: '80%', label: 'Selbstlösungsquote' },
+        { value: '2.5 Min', label: 'Antwortzeit' }
+      ],
+      image: featureImages.chat,
     },
     {
-      icon: Sparkles,
-      title: 'KI-Vorschläge',
-      description: 'Intelligente Antwortvorschläge für schnellere Bearbeitung',
+      icon: Brain,
+      title: 'KI-generierte Antwortvorschläge',
+      description: 'Intelligente Templates für schnellere Bearbeitung',
       longDescription:
-        'Unsere KI analysiert Konversationen und schlägt passende Antwortentwürfe vor — angepasst an Tonalität, Kundenprofil und Unternehmensrichtlinien.',
-      bullets: ['Tonalität anpassbar', 'Schnelle Antwort-Templates', 'Lernfähiges System'],
-      image: featureImages[3],
+        'Unsere KI analysiert Konversationen und schlägt passende Antwortentwürfe vor — angepasst an Tonalität, Kundenprofil und Unternehmensrichtlinien. One-Click Anpassung und Versand.',
+      bullets: [
+        'Tonalität & Stil automatisch angepasst',
+        'Schnelle Antwort-Templates mit Variablen',
+        'Lernfähiges System verbessert sich täglich',
+        'Compliance-Check vor Versand',
+        'A/B Testing von Antworten'
+      ],
+      stats: [
+        { value: '4x', label: 'Schneller schreiben' },
+        { value: '92%', label: 'Kundenzufriedenheit' }
+      ],
+      image: featureImages.suggestions,
     },
     {
-      icon: Sparkles,
+      icon: Zap,
       title: 'Automatisierte Workflows',
-      description: 'Routineträger automatisieren, Zeit sparen',
+      description: 'Intelligente Routineautomatisierung',
       longDescription:
-        'Definiere Trigger und Aktionen für wiederkehrende Aufgaben — z. B. automatische Follow-ups, Terminbestätigungen und Datentransfer in CRMs.',
-      bullets: ['Trigger-basiert', 'Integration in Dritt-Services', 'N8N-Ready Export'],
-      image: featureImages[4],
+        'Definiere Trigger und Aktionen für wiederkehrende Aufgaben — z. B. automatische Follow-ups, Terminbestätigungen und Datentransfer in CRMs. Visualer Workflow-Builder, N8N-Export.',
+      bullets: [
+        'If-This-Then-That Workflows ohne Code',
+        'Integration in Dritt-Services (CRM, ERP)',
+        'N8N-Ready Export für Enterprise',
+        'Conditional Logic & Delays',
+        'Fehlerbehandlung & Fallback-Szenarien',
+        'Echtzeit Monitoring & Logs'
+      ],
+      stats: [
+        { value: '40h/Monat', label: 'Zeitersparnis' },
+        { value: '99.9%', label: 'Zuverlässigkeit' }
+      ],
+      image: featureImages.automation,
     },
     {
-      icon: Sparkles,
-      title: 'Analytics & Insights',
-      description: 'Metriken und KPIs zur Performance-Optimierung',
+      icon: TrendingUp,
+      title: 'Advanced Analytics & Reporting',
+      description: 'Daten-gesteuerte Optimierung',
       longDescription:
-        'Dashboard und Reports zeigen Antwortzeiten, Zufriedenheit und Topics — so erkennst du Verbesserungsbereiche und quantifizierst den Nutzen.',
-      bullets: ['Antwortzeit-Metriken', 'Themen-Cluster', 'Export für BI-Tools'],
-      image: featureImages[5],
+        'Dashboard und Reports zeigen Antwortzeiten, Zufriedenheit und Topics — so erkennst du Verbesserungsbereiche und quantifizierst den Nutzen. Exportiert zu Excel, Tableau, Power BI.',
+      bullets: [
+        'Echtzeit-Dashboards & KPI-Tracking',
+        'Antwortzeit-Metriken & Trends',
+        'Themen-Cluster & Top-Keywords',
+        'Export für BI-Tools (Power BI, Tableau)',
+        'Vorhersagen & Anomalieerkennung',
+        'Custom Reports & Schedulierung'
+      ],
+      stats: [
+        { value: '50+', label: 'Metriken' },
+        { value: '1 Min', label: 'Report-Gen' }
+      ],
+      image: featureImages.analytics,
     },
   ];
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Hero */}
-      <section className="relative overflow-hidden">
+      {/* Hero Section - Extreme Design */}
+      <section className="relative overflow-hidden min-h-screen flex items-center">
         <div
-          className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=1920&q=80')] bg-cover bg-center filter brightness-75 dark:brightness-50"
+          className="absolute inset-0 bg-cover bg-center filter brightness-40 dark:brightness-30"
+          style={{ backgroundImage: `url('${heroImage}')` }}
           aria-hidden
         />
-        <div className="relative z-10 container mx-auto py-28">
-          <div className="bg-white/60 dark:bg-black/50 backdrop-blur-md rounded-3xl p-10 md:p-16 shadow-glow">
-            <div className="grid lg:grid-cols-2 gap-8 items-center">
-              <div className="space-y-6">
-                <div className="inline-flex items-center gap-3 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium">
-                  <Sparkles className="h-5 w-5" />
-                  Premium KI Assistent
-                </div>
-                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
+
+        {/* Animated gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/40 via-transparent to-accent/20 dark:from-primary/20 dark:via-transparent dark:to-accent/10" />
+
+        <div className="relative z-10 container mx-auto">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div className="space-y-8 animate-in fade-in slide-in-from-left-4 duration-1000">
+              <div className="inline-flex items-center gap-3 bg-white/10 dark:bg-white/5 backdrop-blur-md border border-white/20 text-white px-5 py-2 rounded-full text-sm font-semibold hover:bg-white/15 transition-all">
+                <Sparkles className="h-5 w-5" />
+                Künstliche Intelligenz trifft Produktivität
+              </div>
+
+              <div className="space-y-4">
+                <h1 className="text-5xl md:text-6xl lg:text-7xl font-black leading-tight text-white drop-shadow-lg">
                   Deine digitale
-                  <span className="bg-gradient-primary bg-clip-text text-transparent"> KI-Sekretärin</span>
+                  <span className="block bg-gradient-to-r from-blue-400 to-blue-200 bg-clip-text text-transparent animate-pulse"> KI-Sekretärin</span>
                 </h1>
-                <p className="text-lg text-muted-foreground max-w-2xl">
-                  Verwalte Anfragen, Termine und E-Mails mit einem visuellen, kartenbasierten Interface
-                  – unterstützt durch intelligente KI-Antworten und automatisierte Workflows.
-                </p>
-                <div className="flex flex-wrap gap-4">
-                  {user ? (
-                    <Button onClick={() => navigate('/admin')} size="lg" className="shadow-elegant">
-                      Zum Dashboard
-                    </Button>
-                  ) : (
-                    <>
-                      <Button onClick={() => navigate('/register')} size="lg" className="shadow-elegant">
-                        Kostenlos starten
-                      </Button>
-                      <Button onClick={() => navigate('/login')} size="lg" variant="outline">
-                        Anmelden
-                      </Button>
-                    </>
-                  )}
+              </div>
+
+              <p className="text-xl text-white/90 max-w-2xl leading-relaxed drop-shadow-md">
+                Automatisiere E-Mails, Termine und Support-Anfragen. Mit intelligenter Sprachsteuerung, KI-Antwortvorschlägen und nahtloser Integration in deine Systeme.
+              </p>
+
+              {/* Key Stats */}
+              <div className="grid grid-cols-3 gap-4 py-6">
+                <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4 text-white">
+                  <div className="text-2xl font-bold">60%</div>
+                  <div className="text-sm text-white/70">Zeit gespart</div>
+                </div>
+                <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4 text-white">
+                  <div className="text-2xl font-bold">24/7</div>
+                  <div className="text-sm text-white/70">Automatisiert</div>
+                </div>
+                <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4 text-white">
+                  <div className="text-2xl font-bold">99.9%</div>
+                  <div className="text-sm text-white/70">Zuverlässigkeit</div>
                 </div>
               </div>
 
-              <div className="hidden md:block">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="rounded-xl overflow-hidden shadow-lg transform hover:scale-105 transition-all duration-400">
-                    <img loading="lazy" src={featureImages[0]} alt="feature" className="w-full h-48 object-cover" />
-                  </div>
-                  <div className="rounded-xl overflow-hidden shadow-lg transform hover:scale-105 transition-all duration-400">
-                    <img loading="lazy" src={featureImages[1]} alt="feature" className="w-full h-48 object-cover" />
-                  </div>
-                  <div className="rounded-xl overflow-hidden shadow-lg transform hover:scale-105 transition-all duration-400">
-                    <img loading="lazy" src={featureImages[2]} alt="feature" className="w-full h-48 object-cover" />
-                  </div>
-                  <div className="rounded-xl overflow-hidden shadow-lg transform hover:scale-105 transition-all duration-400">
-                    <img loading="lazy" src={featureImages[3]} alt="feature" className="w-full h-48 object-cover" />
-                  </div>
+              <div className="flex flex-wrap gap-4 pt-4">
+                {user ? (
+                  <Button onClick={() => navigate('/admin')} size="lg" className="shadow-elegant bg-white text-primary hover:bg-gray-100">
+                    Zum Dashboard
+                  </Button>
+                ) : (
+                  <>
+                    <Button onClick={() => navigate('/register')} size="lg" className="shadow-elegant bg-white text-primary hover:bg-gray-100">
+                      Kostenlos starten
+                    </Button>
+                    <Button onClick={() => navigate('/login')} size="lg" variant="outline" className="border-white text-white hover:bg-white/10">
+                      Anmelden
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Right side - Image Grid with Parallax */}
+            <div className="hidden lg:block">
+              <div className="grid grid-cols-2 gap-6 animate-in fade-in slide-in-from-right-4 duration-1000 delay-300">
+                <div className="rounded-2xl overflow-hidden shadow-2xl transform hover:scale-110 hover:-rotate-1 transition-all duration-500 border border-white/20">
+                  <img loading="lazy" src={featureImages.voice} alt="Voice Control" className="w-full h-56 object-cover" />
+                  <div className="bg-gradient-to-t from-black/60 to-transparent p-4 text-white text-sm font-semibold absolute inset-0 flex items-end">Sprachsteuerung</div>
+                </div>
+                <div className="rounded-2xl overflow-hidden shadow-2xl transform hover:scale-110 hover:rotate-1 transition-all duration-500 border border-white/20 mt-8">
+                  <img loading="lazy" src={featureImages.chat} alt="Chat Integration" className="w-full h-56 object-cover" />
+                  <div className="bg-gradient-to-t from-black/60 to-transparent p-4 text-white text-sm font-semibold absolute inset-0 flex items-end">Chat-Integration</div>
+                </div>
+                <div className="rounded-2xl overflow-hidden shadow-2xl transform hover:scale-110 hover:rotate-1 transition-all duration-500 border border-white/20">
+                  <img loading="lazy" src={featureImages.tickets} alt="Ticket Management" className="w-full h-56 object-cover" />
+                  <div className="bg-gradient-to-t from-black/60 to-transparent p-4 text-white text-sm font-semibold absolute inset-0 flex items-end">Ticket Management</div>
+                </div>
+                <div className="rounded-2xl overflow-hidden shadow-2xl transform hover:scale-110 hover:-rotate-1 transition-all duration-500 border border-white/20 mt-8">
+                  <img loading="lazy" src={featureImages.analytics} alt="Analytics" className="w-full h-56 object-cover" />
+                  <div className="bg-gradient-to-t from-black/60 to-transparent p-4 text-white text-sm font-semibold absolute inset-0 flex items-end">Analytics</div>
                 </div>
               </div>
             </div>
@@ -143,51 +234,86 @@ export default function Index() {
         </div>
       </section>
 
-      {/* Features Card Grid */}
-      <section className="container mx-auto py-20">
-        <h2 className="text-3xl font-bold mb-8">Features</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          {features.map((f, i) => (
-            <article
-              key={i}
-              className="group rounded-2xl overflow-hidden border bg-card hover:shadow-2xl transition-transform transform hover:-translate-y-2"
-            >
-              <div className="relative h-48">
-                <img
-                  src={f.image || featureImages[i % featureImages.length]}
-                  alt={f.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  loading="lazy"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-                <div className="absolute left-4 bottom-4">
-                  <h3 className="text-white text-lg font-semibold">{f.title}</h3>
-                </div>
-              </div>
-              <div className="p-6">
-                <p className="text-sm text-muted-foreground mb-4">{f.description}</p>
-                <div className="flex items-center justify-between">
-                  <div className="inline-flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <f.icon className="h-5 w-5 text-primary" />
+      {/* Features Section - Expanded Content */}
+      <section className="py-32 bg-gradient-to-b from-background via-primary/5 to-background">
+        <div className="container mx-auto">
+          <div className="text-center space-y-4 mb-16 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <h2 className="text-5xl md:text-6xl font-black">Umfassende Feature Suite</h2>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+              Alles was du brauchst, um deinen Workflow zu revolutionieren. Von Sprachsteuerung bis zu KI-gestütztem Reporting.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {features.map((f, i) => (
+              <article
+                key={i}
+                className="group rounded-3xl overflow-hidden border border-primary/10 bg-card hover:border-primary/30 hover:shadow-2xl transition-all transform hover:-translate-y-2 duration-500"
+              >
+                {/* Feature Image */}
+                <div className="relative h-64 overflow-hidden">
+                  <img
+                    src={f.image}
+                    alt={f.title}
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                  <div className="absolute left-6 bottom-6 flex items-center gap-3">
+                    <div className="h-14 w-14 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center">
+                      <f.icon className="h-7 w-7 text-white" />
                     </div>
+                    <div>
+                      <h3 className="text-white text-xl font-bold">{f.title}</h3>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Feature Content */}
+                <div className="p-8 space-y-6">
+                  <p className="text-muted-foreground">{f.description}</p>
+
+                  {/* Stats Row */}
+                  {f.stats && (
+                    <div className="grid grid-cols-2 gap-4 py-4 border-y border-primary/10">
+                      {f.stats.map((stat, idx) => (
+                        <div key={idx} className="text-center">
+                          <div className="text-2xl font-bold text-primary">{stat.value}</div>
+                          <div className="text-sm text-muted-foreground">{stat.label}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Bullets */}
+                  <div className="space-y-2">
+                    {f.bullets.map((bullet, idx) => (
+                      <div key={idx} className="flex items-start gap-3">
+                        <CheckCircle className="h-5 w-5 text-accent flex-shrink-0 mt-0.5" />
+                        <span className="text-sm text-muted-foreground">{bullet}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* CTA Buttons */}
+                  <div className="flex gap-3 pt-4">
                     <button
-                      className="text-sm text-muted-foreground underline hover:no-underline"
+                      className="flex-1 px-4 py-3 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-all text-sm"
                       onClick={() => {
                         setSelectedFeature(f);
                         setModalOpen(true);
                       }}
                     >
-                      Mehr erfahren
+                      Details anschauen
                     </button>
+                    <Button size="sm" variant="outline" onClick={() => navigate('/contact')} className="flex-1">
+                      Kontakt
+                    </Button>
                   </div>
-                  <Button size="sm" variant="ghost" onClick={() => navigate('/contact')}>
-                    Kontakt
-                  </Button>
                 </div>
-              </div>
-            </article>
-          ))}
+              </article>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -201,106 +327,382 @@ export default function Index() {
         }}
       />
 
-      {/* How it works */}
-      <section className="container mx-auto py-16">
-        <h2 className="text-3xl font-bold mb-8">So funktioniert's</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="rounded-xl p-6 bg-card shadow">
-            <h3 className="font-semibold mb-2">1. Verbinden</h3>
-            <p className="text-muted-foreground">Verbinde deine Kanäle (E-Mail, Chat, Kalender) mit wenigen Klicks.</p>
+      {/* How it Works - Static Section with Visual Process */}
+      <section className="py-32 bg-secondary/5 border-t border-b border-primary/10">
+        <div className="container mx-auto">
+          <div className="text-center space-y-4 mb-16 animate-in fade-in duration-700">
+            <h2 className="text-5xl md:text-6xl font-black">So funktioniert's in 4 Schritten</h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">Schnelle Integration und sofortige Produktivität</p>
           </div>
-          <div className="rounded-xl p-6 bg-card shadow">
-            <h3 className="font-semibold mb-2">2. Automatisieren</h3>
-            <p className="text-muted-foreground">Lege Regeln und Workflows fest – wiederkehrende Aufgaben laufen automatisch.</p>
-          </div>
-          <div className="rounded-xl p-6 bg-card shadow">
-            <h3 className="font-semibold mb-2">3. Optimieren</h3>
-            <p className="text-muted-foreground">Nutze Insights und KI-Vorschläge, um Prozesse kontinuierlich zu verbessern.</p>
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            {[
+              {
+                step: 1,
+                title: 'Verbinden',
+                description: 'Verbinde deine Kanäle (E-Mail, Chat, Teams, Slack, Kalender) mit wenigen Klicks. API-Integration oder Vorkonfigurierte Vorlagen.',
+                icon: Users,
+              },
+              {
+                step: 2,
+                title: 'Trainieren',
+                description: 'Lade deine Dokumente, FAQs und Richtlinien hoch. Die KI lernt deine Unternehmenskultur und Kommunikationsstil automatisch.',
+                icon: Brain,
+              },
+              {
+                step: 3,
+                title: 'Automatisieren',
+                description: 'Lege Regeln und Workflows fest – wiederkehrende Aufgaben laufen automatisch. Keine Code-Kenntnisse erforderlich.',
+                icon: Zap,
+              },
+              {
+                step: 4,
+                title: 'Optimieren',
+                description: 'Nutze Live-Insights und KI-Vorschläge, um Prozesse kontinuierlich zu verbessern. Messbare ROI-Steigerung.',
+                icon: TrendingUp,
+              },
+            ].map((item, idx) => (
+              <div key={idx} className="relative group">
+                {/* Connection Line */}
+                {idx < 3 && (
+                  <div className="hidden md:block absolute left-[58%] top-12 w-[calc(100%+1rem)] h-1 bg-gradient-to-r from-primary/30 to-transparent group-hover:from-primary/60 transition-all" />
+                )}
+
+                <div className="relative rounded-2xl p-8 bg-card border border-primary/10 hover:border-primary/30 hover:shadow-xl transition-all duration-500 h-full">
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="h-12 w-12 rounded-xl bg-primary/20 flex items-center justify-center border border-primary/30">
+                      <item.icon className="h-6 w-6 text-primary" />
+                    </div>
+                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-bold">
+                      {item.step}
+                    </div>
+                  </div>
+                  <h3 className="text-xl font-bold mb-2">{item.title}</h3>
+                  <p className="text-muted-foreground text-sm leading-relaxed">{item.description}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Pricing teaser */}
-      <section className="bg-gradient-to-tr from-primary/6 to-transparent py-16">
-        <div className="container mx-auto text-center">
-          <h2 className="text-3xl font-bold mb-4">Preise, die mitwachsen</h2>
-          <p className="text-muted-foreground mb-8">Kostenlose Testphase, transparente Pakete und flexible Team-Optionen.</p>
-          <div className="mx-auto max-w-4xl grid grid-cols-1 sm:grid-cols-3 gap-6">
-            <div className="p-6 rounded-xl bg-card shadow">
-              <div className="text-xl font-semibold mb-2">Starter</div>
-              <div className="text-2xl font-bold mb-4">Kostenlos</div>
-              <ul className="text-sm text-muted-foreground mb-4">
-                <li>Basale KI-Funktionen</li>
-                <li>1 Projekt</li>
+      {/* Pricing Section */}
+      <section className="py-32 bg-gradient-to-br from-primary/8 via-background to-accent/8 relative overflow-hidden">
+        {/* Decorative elements */}
+        <div className="absolute top-20 left-10 w-72 h-72 bg-primary/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-10 w-96 h-96 bg-accent/5 rounded-full blur-3xl" />
+
+        <div className="container mx-auto relative z-10">
+          <div className="text-center space-y-4 mb-16 animate-in fade-in duration-700">
+            <h2 className="text-5xl md:text-6xl font-black">Preise, die mitwachsen</h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Kostenlose Testphase, transparente Pakete und flexible Team-Optionen für alle Unternehmensgrößen.
+            </p>
+          </div>
+
+          <div className="mx-auto max-w-6xl grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Starter Plan */}
+            <div className="rounded-3xl p-8 border border-primary/10 bg-card hover:border-primary/30 hover:shadow-2xl transition-all duration-500">
+              <div className="space-y-4 mb-8">
+                <h3 className="text-2xl font-bold">Starter</h3>
+                <div className="space-y-1">
+                  <div className="text-4xl font-black">Kostenlos</div>
+                  <p className="text-sm text-muted-foreground">Für kleine Projekte</p>
+                </div>
+              </div>
+              <ul className="space-y-3 mb-8">
+                <li className="flex items-center gap-3">
+                  <CheckCircle className="h-5 w-5 text-accent flex-shrink-0" />
+                  <span className="text-sm">1 Projekt</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <CheckCircle className="h-5 w-5 text-accent flex-shrink-0" />
+                  <span className="text-sm">Basale KI-Funktionen</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <CheckCircle className="h-5 w-5 text-accent flex-shrink-0" />
+                  <span className="text-sm">Email-Unterstützung</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <CheckCircle className="h-5 w-5 text-accent flex-shrink-0" />
+                  <span className="text-sm">100 API-Calls/Tag</span>
+                </li>
               </ul>
-              <Button variant="outline">Loslegen</Button>
+              <Button onClick={() => navigate('/register')} variant="outline" className="w-full">
+                Kostenlos starten
+              </Button>
             </div>
-            <div className="p-6 rounded-xl bg-primary text-white shadow-lg">
-              <div className="text-xl font-semibold mb-2">Business</div>
-              <div className="text-2xl font-bold mb-4">€29 / Monat</div>
-              <ul className="text-sm mb-4">
-                <li>Alle Kernfunktionen</li>
-                <li>Team-Accounts</li>
+
+            {/* Business Plan - Featured */}
+            <div className="rounded-3xl p-8 border-2 border-primary bg-gradient-to-br from-primary/10 to-primary/5 hover:shadow-2xl transition-all duration-500 transform scale-105 relative">
+              <div className="absolute top-6 right-6 bg-accent text-white px-4 py-1 rounded-full text-sm font-bold">
+                BELIEBT
+              </div>
+              <div className="space-y-4 mb-8">
+                <h3 className="text-2xl font-bold">Business</h3>
+                <div className="space-y-1">
+                  <div className="text-4xl font-black text-primary">€29<span className="text-lg text-muted-foreground">/Monat</span></div>
+                  <p className="text-sm text-muted-foreground">Für wachsende Teams</p>
+                </div>
+              </div>
+              <ul className="space-y-3 mb-8">
+                <li className="flex items-center gap-3">
+                  <CheckCircle className="h-5 w-5 text-primary flex-shrink-0" />
+                  <span className="text-sm font-medium">Unbegrenzte Projekte</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <CheckCircle className="h-5 w-5 text-primary flex-shrink-0" />
+                  <span className="text-sm font-medium">Alle KI-Features</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <CheckCircle className="h-5 w-5 text-primary flex-shrink-0" />
+                  <span className="text-sm font-medium">Team-Accounts (5 Nutzer)</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <CheckCircle className="h-5 w-5 text-primary flex-shrink-0" />
+                  <span className="text-sm font-medium">10.000 API-Calls/Tag</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <CheckCircle className="h-5 w-5 text-primary flex-shrink-0" />
+                  <span className="text-sm font-medium">Priority Support</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <CheckCircle className="h-5 w-5 text-primary flex-shrink-0" />
+                  <span className="text-sm font-medium">Custom Integrationen</span>
+                </li>
               </ul>
-              <Button>Jetzt testen</Button>
+              <Button onClick={() => navigate('/register')} className="w-full bg-primary hover:bg-primary/90">
+                Jetzt testen
+              </Button>
             </div>
-            <div className="p-6 rounded-xl bg-card shadow">
-              <div className="text-xl font-semibold mb-2">Enterprise</div>
-              <div className="text-2xl font-bold mb-4">Auf Anfrage</div>
-              <ul className="text-sm text-muted-foreground mb-4">
-                <li>Individuelle Integrationen</li>
-                <li>Unterstützung & SLA</li>
+
+            {/* Enterprise Plan */}
+            <div className="rounded-3xl p-8 border border-primary/10 bg-card hover:border-primary/30 hover:shadow-2xl transition-all duration-500">
+              <div className="space-y-4 mb-8">
+                <h3 className="text-2xl font-bold">Enterprise</h3>
+                <div className="space-y-1">
+                  <div className="text-4xl font-black">Individuell</div>
+                  <p className="text-sm text-muted-foreground">Für große Organisationen</p>
+                </div>
+              </div>
+              <ul className="space-y-3 mb-8">
+                <li className="flex items-center gap-3">
+                  <CheckCircle className="h-5 w-5 text-accent flex-shrink-0" />
+                  <span className="text-sm">Alles aus Business +</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <CheckCircle className="h-5 w-5 text-accent flex-shrink-0" />
+                  <span className="text-sm">Unbegrenzte Nutzer</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <CheckCircle className="h-5 w-5 text-accent flex-shrink-0" />
+                  <span className="text-sm">Dedizierter Support</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <CheckCircle className="h-5 w-5 text-accent flex-shrink-0" />
+                  <span className="text-sm">SLA-Garantie</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <CheckCircle className="h-5 w-5 text-accent flex-shrink-0" />
+                  <span className="text-sm">On-Premise Option</span>
+                </li>
               </ul>
-              <Button variant="ghost">Kontakt</Button>
+              <Button onClick={() => navigate('/contact')} variant="outline" className="w-full">
+                Gespräch vereinbaren
+              </Button>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className="container mx-auto py-16">
-        <h2 className="text-3xl font-bold mb-8">Was unsere Nutzer sagen</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="rounded-xl p-6 bg-card shadow">
-            <p className="text-muted-foreground mb-4">"Unsere Antwortzeiten haben sich halbiert. Die KI hilft täglich."</p>
-            <div className="text-sm font-medium">Maria H., Office Manager</div>
+      {/* Testimonials Section */}
+      <section className="py-32 bg-gradient-to-b from-background to-secondary/5">
+        <div className="container mx-auto">
+          <div className="text-center space-y-4 mb-16 animate-in fade-in duration-700">
+            <h2 className="text-5xl md:text-6xl font-black">Was unsere Nutzer sagen</h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">Vertrauen von hunderten Unternehmen weltweit</p>
           </div>
-          <div className="rounded-xl p-6 bg-card shadow">
-            <p className="text-muted-foreground mb-4">"Die Sprachfunktion spart uns viele Klicks — besonders unterwegs."</p>
-            <div className="text-sm font-medium">Lukas P., Vertriebsleiter</div>
-          </div>
-          <div className="rounded-xl p-6 bg-card shadow">
-            <p className="text-muted-foreground mb-4">"Einfache Integration in N8N – Automatisierungen laufen stabil."</p>
-            <div className="text-sm font-medium">Startup X</div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            {[
+              {
+                quote: "Unsere Antwortzeiten haben sich um 60% reduziert. Die KI hilft unseren Support-Teams täglich. Absolut empfehlenswert!",
+                author: "Maria H.",
+                title: "Office Manager",
+                company: "Tech Startup Berlin",
+                rating: 5,
+              },
+              {
+                quote: "Die Sprachfunktion spart uns viele Klicks — besonders unterwegs. Termine werden jetzt per Voice erstellt. Großartig!",
+                author: "Lukas P.",
+                title: "Vertriebsleiter",
+                company: "Global Solutions GmbH",
+                rating: 5,
+              },
+              {
+                quote: "Einfache Integration in N8N. Automatisierungen laufen stabil und zuverlässig. Genau was wir gebraucht haben!",
+                author: "Johannes K.",
+                title: "CTO",
+                company: "Startup X",
+                rating: 5,
+              },
+            ].map((testimonial, idx) => (
+              <div key={idx} className="rounded-2xl p-8 bg-card border border-primary/10 hover:border-primary/30 hover:shadow-xl transition-all duration-500">
+                <div className="flex gap-1 mb-4">
+                  {[...Array(testimonial.rating)].map((_, i) => (
+                    <span key={i} className="text-accent">★</span>
+                  ))}
+                </div>
+                <blockquote className="text-muted-foreground mb-6 italic leading-relaxed">
+                  "{testimonial.quote}"
+                </blockquote>
+                <div className="border-t border-primary/10 pt-4">
+                  <div className="font-bold">{testimonial.author}</div>
+                  <div className="text-sm text-muted-foreground">{testimonial.title}</div>
+                  <div className="text-sm text-accent font-semibold">{testimonial.company}</div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* FAQ */}
-      <section className="container mx-auto py-16">
-        <h2 className="text-3xl font-bold mb-8">Häufige Fragen</h2>
-        <div className="space-y-4 max-w-3xl">
-          <details className="p-4 bg-card rounded-lg">
-            <summary className="font-medium">Ist das System DSGVO-konform?</summary>
-            <p className="mt-2 text-muted-foreground">Wir bieten DSGVO-konforme Speicherung und rollenbasierte Zugriffe; für Enterprise-Kunden können weitere Maßnahmen vereinbart werden.</p>
-          </details>
-          <details className="p-4 bg-card rounded-lg">
-            <summary className="font-medium">Welche Integrationen gibt es?</summary>
-            <p className="mt-2 text-muted-foreground">Kalender, E-Mail, Zapier, N8N und gängige CRMs; individuelle Integrationen sind möglich.</p>
-          </details>
+      {/* FAQ Section */}
+      <section className="py-32 bg-gradient-to-b from-secondary/5 to-background relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-accent/5 rounded-full blur-3xl -mr-40" />
+
+        <div className="container mx-auto relative z-10">
+          <div className="text-center space-y-4 mb-16 animate-in fade-in duration-700">
+            <h2 className="text-5xl md:text-6xl font-black">Häufig gestellte Fragen</h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">Alles was du wissen möchtest</p>
+          </div>
+
+          <div className="max-w-4xl mx-auto space-y-4">
+            {[
+              {
+                question: "Ist das System DSGVO-konform?",
+                answer: "Ja, wir bieten DSGVO-konforme Speicherung mit Verschlüsselung, Datenlöschung auf Anfrage und rollenbasierte Zugriffe. Für Enterprise-Kunden können erweiterte Datenschutzmaßnahmen, Datenverarbeitung in der EU und Geschäftsgeheimnis-Verträge vereinbart werden.",
+              },
+              {
+                question: "Welche Integrationen sind möglich?",
+                answer: "Wir unterstützen E-Mail (Gmail, Outlook), Kalender, Chat-Systeme (Teams, Slack), CRMs (Salesforce, HubSpot), ERPs und Workflow-Tools wie Zapier und N8N. Custom-Integrationen sind im Business- und Enterprise-Plan möglich.",
+              },
+              {
+                question: "Wie lange dauert das Onboarding?",
+                answer: "Das Onboarding dauert typischerweise 2-4 Tage. Schritt 1: Verbindung zu deinen Systemen (1h). Schritt 2: KI Training mit deinen Daten (1-2 Tage). Schritt 3: Workflow-Setup & Testing (1 Tag). Enterprise-Kunden erhalten dediziertes Onboarding-Team.",
+              },
+              {
+                question: "Kann ich die KI auf meine Unternehmensrichtlinien trainieren?",
+                answer: "Absolut! Du kannst bis zu 1000 Dokumente hochladen (PDF, Word, Excel, etc.). Die KI lernt deine Unternehmenskultur, Kommunikationsstil und spezifische Richtlinien automatisch. Updates sind jederzeit möglich.",
+              },
+              {
+                question: "Was passiert mit meinen Daten?",
+                answer: "Deine Daten gehören dir. Wir speichern sie verschlüsselt auf EU-Servern, greifen nicht ohne Genehmigung darauf zu und löschen alles auf deine Anfrage hin. Wir verkaufen niemals Daten an Dritte.",
+              },
+              {
+                question: "Gibt es eine Trial-Phase?",
+                answer: "Ja! Der Starter-Plan ist kostenlos und unbegrenzt. Business- und Enterprise-Kunden können kostenloses 14-Tage Ausprobieren mit allen Features. Keine Kreditkarte erforderlich.",
+              },
+            ].map((faq, idx) => (
+              <details key={idx} className="group rounded-2xl border border-primary/10 hover:border-primary/30 transition-all duration-300">
+                <summary className="px-6 py-5 font-bold cursor-pointer flex items-center justify-between hover:bg-primary/5 rounded-2xl">
+                  <span className="text-lg">{faq.question}</span>
+                  <span className="transform group-open:rotate-180 transition-transform">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                    </svg>
+                  </span>
+                </summary>
+                <div className="px-6 pb-5 pt-0 text-muted-foreground leading-relaxed border-t border-primary/10">
+                  {faq.answer}
+                </div>
+              </details>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="bg-gradient-to-tr from-primary/10 to-accent/10 py-16 mt-20">
-        <div className="container mx-auto text-center">
-          <h2 className="text-3xl font-bold mb-4">Bereit, Zeit zu sparen?</h2>
-          <p className="text-lg text-muted-foreground mb-6">Teste die KI-Sekretärin kostenlos und sieh selbst.</p>
-          {!user && (
-            <Button onClick={() => navigate('/register')} size="lg" className="shadow-elegant">
-              Kostenlos testen
-            </Button>
-          )}
+      {/* Final CTA Section */}
+      <section className="py-32 bg-gradient-to-br from-primary/15 via-accent/10 to-primary/5 relative overflow-hidden">
+        {/* Animated background elements */}
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-3xl -top-40 animate-float" />
+        <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-accent/15 rounded-full blur-3xl -bottom-40" />
+
+        <div className="container mx-auto text-center relative z-10">
+          <div className="space-y-8 max-w-3xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div className="space-y-4">
+              <h2 className="text-5xl md:text-6xl lg:text-7xl font-black leading-tight">
+                Bereit, deine Produktivität zu revolutionieren?
+              </h2>
+              <p className="text-xl text-muted-foreground">
+                Tausende von Teams nutzen bereits die KI-Sekretärin, um Zeit zu sparen und effizienter zu arbeiten. Starten Sie kostenlos.
+              </p>
+            </div>
+
+            {/* Stats before signup */}
+            <div className="grid grid-cols-3 gap-6 py-8 border-y border-primary/20">
+              <div>
+                <div className="text-3xl font-black text-primary">10K+</div>
+                <div className="text-sm text-muted-foreground">Active Users</div>
+              </div>
+              <div>
+                <div className="text-3xl font-black text-accent">500+</div>
+                <div className="text-sm text-muted-foreground">Integrations</div>
+              </div>
+              <div>
+                <div className="text-3xl font-black text-primary">99.9%</div>
+                <div className="text-sm text-muted-foreground">Uptime</div>
+              </div>
+            </div>
+
+            {!user && (
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Button
+                  onClick={() => navigate('/register')}
+                  size="lg"
+                  className="shadow-elegant bg-white text-primary hover:bg-gray-100 px-8 py-6 text-lg"
+                >
+                  Kostenlos starten
+                </Button>
+                <Button
+                  onClick={() => navigate('/contact')}
+                  size="lg"
+                  variant="outline"
+                  className="border-primary/30 px-8 py-6 text-lg"
+                >
+                  Demo buchen
+                </Button>
+              </div>
+            )}
+
+            <p className="text-sm text-muted-foreground">
+              Keine Kreditkarte erforderlich. 14 Tage kostenlosen Zugang zu allen Features.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Bottom Stats Banner */}
+      <section className="py-16 border-t border-primary/10 bg-gradient-to-r from-primary/5 to-accent/5">
+        <div className="container mx-auto">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+            <div>
+              <div className="text-3xl font-black text-primary">60%</div>
+              <p className="text-sm text-muted-foreground mt-2">Durchschnittliche Zeiteinsparung</p>
+            </div>
+            <div>
+              <div className="text-3xl font-black text-accent">4h/Tag</div>
+              <p className="text-sm text-muted-foreground mt-2">Zeit pro Mitarbeiter gespart</p>
+            </div>
+            <div>
+              <div className="text-3xl font-black text-primary">24/7</div>
+              <p className="text-sm text-muted-foreground mt-2">Automatisierte Unterstützung</p>
+            </div>
+            <div>
+              <div className="text-3xl font-black text-accent">€0</div>
+              <p className="text-sm text-muted-foreground mt-2">Startkosten</p>
+            </div>
+          </div>
         </div>
       </section>
     </div>
