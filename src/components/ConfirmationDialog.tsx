@@ -91,7 +91,7 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
   );
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
       <Card className="w-full max-w-md shadow-elegant animate-scale-in">
         <CardHeader className="text-center">
           <div className={`w-16 h-16 mx-auto mb-4 rounded-full ${config.bgColor} flex items-center justify-center`}>
