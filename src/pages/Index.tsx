@@ -147,76 +147,61 @@ export default function Index() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Hero Section - Extreme Design */}
-      <section className="relative overflow-hidden min-h-screen flex items-center">
-        <div
-          className="absolute inset-0 bg-cover bg-center filter brightness-25 dark:brightness-20"
-          style={{ backgroundImage: `url('${heroImage}')` }}
-          aria-hidden
-        />
-
-        {/* Darker gradient overlay for better text contrast on first view */}
-        <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-transparent to-black/20 dark:from-black/60 dark:via-transparent dark:to-black/30" />
-
-        <div className="relative z-10 container mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="space-y-8 animate-in fade-in slide-in-from-left-4 duration-1000">
-              <div className="inline-flex items-center gap-3 bg-white/10 dark:bg-white/5 backdrop-blur-md border border-white/20 text-white px-5 py-2 rounded-full text-sm font-semibold hover:bg-white/15 transition-all">
-                <Sparkles className="h-5 w-5" />
-                Künstliche Intelligenz trifft Produktivität
+      {/* Hero Section - Überarbeitet, angepasst an bestehendes Farbschema */}
+      <section className="relative overflow-hidden min-h-[80vh] flex items-center bg-gradient-to-b from-primary/10 to-background">
+        <div className="container mx-auto">
+          <div className="grid lg:grid-cols-2 gap-12 items-center py-20">
+            <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-700">
+              <div className="inline-flex items-center gap-3 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-semibold">
+                <Sparkles className="h-5 w-5 text-primary" />
+                Produktiv durch KI
               </div>
 
-              <div className="space-y-4">
-                <h1 className="text-5xl md:text-6xl lg:text-7xl font-black leading-tight text-white drop-shadow-lg">
-                  Deine digitale
-                  <span className="block bg-gradient-to-r from-blue-400 to-blue-200 bg-clip-text text-transparent animate-pulse"> KI-Sekretärin</span>
-                </h1>
-              </div>
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-foreground leading-tight">
+                Deine digitale{' '}
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">KI-Sekretärin</span>
+              </h1>
 
-              <p className="text-xl text-white/90 max-w-2xl leading-relaxed drop-shadow-md">
-                Automatisiere E-Mails, Termine und Support-Anfragen. Mit intelligenter Sprachsteuerung, KI-Antwortvorschlägen und nahtloser Integration in deine Systeme.
+              <p className="text-lg text-muted-foreground max-w-2xl leading-relaxed">
+                Automatisiere E‑Mails, Termine und Support-Anfragen — per Sprache oder Klick. Schnell einrichten, sofort produktiver.
               </p>
 
-              {/* Key Stats */}
-              <div className="grid grid-cols-3 gap-4 py-6">
-                <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4 text-white">
-                  <div className="text-2xl font-bold">60%</div>
-                  <div className="text-sm text-white/70">Zeit gespart</div>
-                </div>
-                <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4 text-white">
-                  <div className="text-2xl font-bold">24/7</div>
-                  <div className="text-sm text-white/70">Automatisiert</div>
-                </div>
-                <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4 text-white">
-                  <div className="text-2xl font-bold">99.9%</div>
-                  <div className="text-sm text-white/70">Zuverlässigkeit</div>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap gap-4 pt-4">
+              <div className="flex flex-wrap gap-4">
                 {user ? (
-                  <Button onClick={() => navigate('/admin')} size="lg" className="shadow-elegant bg-white text-primary hover:bg-gray-100">
+                  <Button onClick={() => navigate('/admin')} size="lg" className="bg-primary text-primary-foreground">
                     Zum Dashboard
                   </Button>
                 ) : (
                   <>
-                    <Button onClick={() => navigate('/register')} size="lg" className="shadow-elegant bg-white text-primary hover:bg-gray-100">
+                    <Button onClick={() => navigate('/register')} size="lg" className="bg-primary text-primary-foreground">
                       Kostenlos starten
                     </Button>
-                    <Button onClick={() => navigate('/login')} size="lg" variant="outline" className="border-white text-white hover:bg-white/10">
-                      Anmelden
+                    <Button onClick={() => navigate('/contact')} size="lg" variant="outline" className="border-primary/20 text-primary">
+                      Demo buchen
                     </Button>
                   </>
                 )}
               </div>
+
+              <div className="flex gap-4 mt-6">
+                <div className="p-4 rounded-lg bg-card border border-primary/10">
+                  <div className="text-2xl font-bold text-primary">60%</div>
+                  <div className="text-sm text-muted-foreground">Zeit gespart</div>
+                </div>
+                <div className="p-4 rounded-lg bg-card border border-primary/10">
+                  <div className="text-2xl font-bold text-primary">24/7</div>
+                  <div className="text-sm text-muted-foreground">Automatisiert</div>
+                </div>
+                <div className="p-4 rounded-lg bg-card border border-primary/10">
+                  <div className="text-2xl font-bold text-primary">99.9%</div>
+                  <div className="text-sm text-muted-foreground">Zuverlässigkeit</div>
+                </div>
+              </div>
             </div>
 
-            {/* Right side - Single large uploaded image for clearer hero (replace public/uploaded-hero.jpg with your uploaded file) */}
-            <div className="hidden lg:flex justify-center">
-              {/* Vergrößertes Hero-Bild: etwas breiter und höher für bessere Lesbarkeit der eingebetteten Texte */}
-              <div className="relative w-full max-w-4xl lg:max-w-5xl h-[640px] rounded-3xl overflow-hidden shadow-2xl transform hover:scale-[1.02] transition-all duration-700 border border-white/10">
-                <img loading="lazy" src={uploadedHero} alt="Produktbild" className="w-full h-full object-cover object-center" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" aria-hidden />
+            <div className="flex justify-center">
+              <div className="w-full max-w-md rounded-2xl overflow-hidden shadow-xl border border-primary/10 bg-gradient-to-br from-white/5 to-transparent p-4">
+                <img loading="lazy" src={uploadedHero} alt="Produktbild" className="w-full h-72 object-cover rounded-lg" />
               </div>
             </div>
           </div>
