@@ -6,7 +6,9 @@ import { useState } from 'react';
 import FeatureModal from '@/components/FeatureModal';
 
 // Premium images from Pexels and Unsplash - carefully curated for each feature
+// NOTE: Replace the file at `public/uploaded-hero.jpg` with the image you uploaded.
 const heroImage = 'https://images.unsplash.com/photo-1677442d019cecf3da6888533cda230f904896700?auto=format&fit=crop&w=2000&q=80';
+const uploadedHero = '/uploaded-hero.jpg';
 
 const featureImages = {
   voice: 'https://images.pexels.com/photos/8728461/pexels-photo-8728461.jpeg?auto=compress&cs=tinysrgb&w=1000&h=700&fit=crop',
@@ -148,13 +150,13 @@ export default function Index() {
       {/* Hero Section - Extreme Design */}
       <section className="relative overflow-hidden min-h-screen flex items-center">
         <div
-          className="absolute inset-0 bg-cover bg-center filter brightness-40 dark:brightness-30"
+          className="absolute inset-0 bg-cover bg-center filter brightness-25 dark:brightness-20"
           style={{ backgroundImage: `url('${heroImage}')` }}
           aria-hidden
         />
 
-        {/* Animated gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/40 via-transparent to-accent/20 dark:from-primary/20 dark:via-transparent dark:to-accent/10" />
+        {/* Darker gradient overlay for better text contrast on first view */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-transparent to-black/20 dark:from-black/60 dark:via-transparent dark:to-black/30" />
 
         <div className="relative z-10 container mx-auto">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
@@ -209,25 +211,11 @@ export default function Index() {
               </div>
             </div>
 
-            {/* Right side - Image Grid with Parallax */}
-            <div className="hidden lg:block">
-              <div className="grid grid-cols-2 gap-6 animate-in fade-in slide-in-from-right-4 duration-1000 delay-300">
-                <div className="rounded-2xl overflow-hidden shadow-2xl transform hover:scale-110 hover:-rotate-1 transition-all duration-500 border border-white/20">
-                  <img loading="lazy" src={featureImages.voice} alt="Voice Control" className="w-full h-56 object-cover" />
-                  <div className="bg-gradient-to-t from-black/60 to-transparent p-4 text-white text-sm font-semibold absolute inset-0 flex items-end">Sprachsteuerung</div>
-                </div>
-                <div className="rounded-2xl overflow-hidden shadow-2xl transform hover:scale-110 hover:rotate-1 transition-all duration-500 border border-white/20 mt-8">
-                  <img loading="lazy" src={featureImages.chat} alt="Chat Integration" className="w-full h-56 object-cover" />
-                  <div className="bg-gradient-to-t from-black/60 to-transparent p-4 text-white text-sm font-semibold absolute inset-0 flex items-end">Chat-Integration</div>
-                </div>
-                <div className="rounded-2xl overflow-hidden shadow-2xl transform hover:scale-110 hover:rotate-1 transition-all duration-500 border border-white/20">
-                  <img loading="lazy" src={featureImages.tickets} alt="Ticket Management" className="w-full h-56 object-cover" />
-                  <div className="bg-gradient-to-t from-black/60 to-transparent p-4 text-white text-sm font-semibold absolute inset-0 flex items-end">Ticket Management</div>
-                </div>
-                <div className="rounded-2xl overflow-hidden shadow-2xl transform hover:scale-110 hover:-rotate-1 transition-all duration-500 border border-white/20 mt-8">
-                  <img loading="lazy" src={featureImages.analytics} alt="Analytics" className="w-full h-56 object-cover" />
-                  <div className="bg-gradient-to-t from-black/60 to-transparent p-4 text-white text-sm font-semibold absolute inset-0 flex items-end">Analytics</div>
-                </div>
+            {/* Right side - Single large uploaded image for clearer hero (replace public/uploaded-hero.jpg with your uploaded file) */}
+            <div className="hidden lg:flex justify-center">
+              <div className="relative w-full max-w-md h-[520px] rounded-3xl overflow-hidden shadow-2xl transform hover:scale-[1.02] transition-all duration-700 border border-white/10">
+                <img loading="lazy" src={uploadedHero} alt="Produktbild" className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" aria-hidden />
               </div>
             </div>
           </div>
