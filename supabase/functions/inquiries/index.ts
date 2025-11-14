@@ -6,6 +6,47 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Input validation function
+const validateInput = (body: any): string[] => {
+  const errors: string[] = [];
+  
+  if (!body.name || typeof body.name !== 'string' || body.name.trim().length === 0) {
+    errors.push('Name ist erforderlich');
+  } else if (body.name.length > 100) {
+    errors.push('Name darf maximal 100 Zeichen lang sein');
+  }
+  
+  if (!body.email || typeof body.email !== 'string') {
+    errors.push('E-Mail ist erforderlich');
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.email)) {
+    errors.push('Ungültige E-Mail-Adresse');
+  } else if (body.email.length > 255) {
+    errors.push('E-Mail darf maximal 255 Zeichen lang sein');
+  }
+  
+  if (body.phone && (typeof body.phone !== 'string' || body.phone.length > 20)) {
+    errors.push('Telefonnummer darf maximal 20 Zeichen lang sein');
+  }
+  
+  if (!body.subject || typeof body.subject !== 'string' || body.subject.trim().length === 0) {
+    errors.push('Betreff ist erforderlich');
+  } else if (body.subject.length > 200) {
+    errors.push('Betreff darf maximal 200 Zeichen lang sein');
+  }
+  
+  if (!body.message || typeof body.message !== 'string' || body.message.trim().length === 0) {
+    errors.push('Nachricht ist erforderlich');
+  } else if (body.message.length > 5000) {
+    errors.push('Nachricht darf maximal 5000 Zeichen lang sein');
+  }
+  
+  if (!body.user_id || typeof body.user_id !== 'string') {
+    errors.push('User ID ist erforderlich');
+  }
+  
+  return errors;
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -58,17 +99,33 @@ serve(async (req) => {
     if (req.method === 'POST') {
       const body = await req.json();
       
+      // Validate input
+      const validationErrors = validateInput(body);
+      if (validationErrors.length > 0) {
+        console.error("Validation errors:", validationErrors);
+        return new Response(
+          JSON.stringify({ error: validationErrors.join(', ') }),
+          { 
+            status: 400, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
+      
+      // Sanitize input by trimming and limiting length
+      const sanitizedData = {
+        name: body.name.trim().substring(0, 100),
+        email: body.email.trim().toLowerCase().substring(0, 255),
+        phone: body.phone ? body.phone.trim().substring(0, 20) : null,
+        subject: body.subject.trim().substring(0, 200),
+        message: body.message.trim().substring(0, 5000),
+        category: body.category || 'general',
+        user_id: body.user_id,
+      };
+      
       const { data, error } = await supabaseClient
         .from('inquiries')
-        .insert({
-          name: body.name,
-          email: body.email,
-          phone: body.phone,
-          subject: body.subject,
-          message: body.message,
-          category: body.category || 'general',
-          user_id: body.user_id,
-        })
+        .insert(sanitizedData)
         .select()
         .single();
 

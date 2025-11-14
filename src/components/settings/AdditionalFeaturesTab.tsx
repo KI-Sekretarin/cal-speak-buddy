@@ -31,7 +31,7 @@ export function AdditionalFeaturesTab({ profile, onUpdate }: AdditionalFeaturesT
   };
 
   const updateBusinessHours = (day: string, field: 'open' | 'close' | 'closed', value: string | boolean) => {
-    const hours = { ...profile?.business_hours } || {};
+    const hours = profile?.business_hours ? { ...profile.business_hours } : {};
     if (!hours[day]) {
       hours[day] = { open: '09:00', close: '17:00' };
     }

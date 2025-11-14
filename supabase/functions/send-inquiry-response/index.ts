@@ -20,6 +20,15 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // Verify authentication
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: "Nicht autorisiert" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const { responseId }: SendResponseRequest = await req.json();
 
     if (!responseId) {
@@ -31,6 +40,19 @@ const handler = async (req: Request): Promise<Response> => {
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
+    
+    // Verify user authentication and get user
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(
+      authHeader.replace("Bearer ", "")
+    );
+    
+    if (authError || !user) {
+      console.error("Auth error:", authError);
+      return new Response(
+        JSON.stringify({ error: "Ungültige Authentifizierung" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // Get the AI response with inquiry details
     const { data: response, error: responseError } = await supabaseClient
@@ -59,6 +81,15 @@ const handler = async (req: Request): Promise<Response> => {
     const inquiry = response.inquiries as any;
     if (!inquiry || !inquiry.email) {
       throw new Error("Keine E-Mail-Adresse gefunden");
+    }
+    
+    // Verify user owns this inquiry
+    if (inquiry.user_id !== user.id) {
+      console.error("User does not own inquiry");
+      return new Response(
+        JSON.stringify({ error: "Zugriff verweigert" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     console.log(`Sending email to ${inquiry.email} for inquiry ${inquiry.id}`);
