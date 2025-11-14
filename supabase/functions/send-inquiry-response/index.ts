@@ -4,6 +4,16 @@ import { Resend } from "https://esm.sh/resend@4.0.0";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
+// HTML escape function to prevent XSS attacks
+const escapeHtml = (unsafe: string): string => {
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+};
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -98,18 +108,18 @@ const handler = async (req: Request): Promise<Response> => {
     const emailResponse = await resend.emails.send({
       from: "KI-Sekretärin <onboarding@resend.dev>",
       to: [inquiry.email],
-      subject: `Re: ${inquiry.subject}`,
+      subject: `Re: ${escapeHtml(inquiry.subject)}`,
       html: `
         <h2>Antwort auf Ihre Anfrage</h2>
-        <p>Hallo ${inquiry.name},</p>
+        <p>Hallo ${escapeHtml(inquiry.name)},</p>
         <p>vielen Dank für Ihre Anfrage. Hier ist unsere Antwort:</p>
         <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-          ${response.suggested_response.replace(/\n/g, '<br>')}
+          ${escapeHtml(response.suggested_response).replace(/\n/g, '<br>')}
         </div>
         <hr style="margin: 30px 0; border: none; border-top: 1px solid #e0e0e0;">
         <p style="font-size: 12px; color: #666;">
           <strong>Ihre ursprüngliche Nachricht:</strong><br>
-          ${inquiry.message.replace(/\n/g, '<br>')}
+          ${escapeHtml(inquiry.message).replace(/\n/g, '<br>')}
         </p>
         <p style="font-size: 12px; color: #999; margin-top: 30px;">
           Mit freundlichen Grüßen,<br>
