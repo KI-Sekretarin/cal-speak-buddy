@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Code, Layers, Zap, BarChart, Users, Globe, Star } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import FeatureModal from '@/components/FeatureModal';
+import ThemeToggle from '@/components/ThemeToggle';
 type Feature = {
   icon?: any;
   title: string;
@@ -88,13 +89,16 @@ export default function Index() {
     els.forEach(el => io.observe(el));
     return () => io.disconnect();
   }, []);
-  return <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-950 text-slate-100">
+  return <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20 text-foreground">
       <header className="relative">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-[#071028] to-[#021026] opacity-95" />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-accent/5 opacity-60" />
         <div className="relative z-10 container mx-auto py-24">
+          <div className="absolute top-4 right-4">
+            <ThemeToggle />
+          </div>
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="space-y-6">
-              <div className="inline-flex items-center gap-3 bg-white/5 px-4 py-2 rounded-full text-sm text-slate-200">
+              <div className="inline-flex items-center gap-3 bg-primary/10 px-4 py-2 rounded-full text-sm text-muted-foreground">
                 Developer-first · KI-Sekretärin
               </div>
 
@@ -102,13 +106,13 @@ export default function Index() {
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#6fb3ff] via-[#2463ea] to-[#4b2be6]"> build faster, ship smarter</span>
               </h1>
 
-              <p className="text-lg text-slate-300 max-w-2xl">Eine moderne Assistenz für Teams: Tickets, Termine, Chat und Workflows an einem Ort — optimiert für Produktivität und Developer‑Workflows. KI-gestützte Vorschläge reduzieren Routineaufgaben und geben deinem Team Zeit für Wichtiges.</p>
+              <p className="text-lg text-muted-foreground max-w-2xl">Eine moderne Assistenz für Teams: Tickets, Termine, Chat und Workflows an einem Ort — optimiert für Produktivität und Developer‑Workflows. KI-gestützte Vorschläge reduzieren Routineaufgaben und geben deinem Team Zeit für Wichtiges.</p>
 
               <div className="flex flex-wrap gap-4">
-                <Button size="lg" className="bg-[#2463ea] hover:brightness-110 text-white" onClick={() => navigate('/register')}>
+                <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground" onClick={() => navigate('/register')}>
                   Kostenlos testen
                 </Button>
-                <Button size="lg" variant="outline" onClick={() => navigate('/help')} className="bg-[#2463ea]">
+                <Button size="lg" variant="outline" onClick={() => navigate('/help')}>
                   Dokumentation
                 </Button>
                 <Button size="lg" variant="ghost" onClick={() => window.scrollTo({
@@ -120,21 +124,21 @@ export default function Index() {
               </div>
 
               <div className="mt-6 flex items-center gap-4">
-                <div className="inline-flex items-center gap-3 bg-white/3 px-3 py-2 rounded-full text-sm">
-                  <Star className="h-4 w-4 text-yellow-400" /> Trusted by teams
+                <div className="inline-flex items-center gap-3 bg-accent/10 px-3 py-2 rounded-full text-sm">
+                  <Star className="h-4 w-4 text-accent" /> Trusted by teams
                 </div>
-                <div className="text-sm text-slate-400">Über 1.200+ aktive Nutzer · 99.9% Uptime</div>
+                <div className="text-sm text-muted-foreground">Über 1.200+ aktive Nutzer · 99.9% Uptime</div>
               </div>
             </div>
 
             <div>
-              <div className="rounded-3xl overflow-hidden shadow-2xl ring-1 ring-white/6 bg-[#041024]">
-                <div className="p-6 bg-gradient-to-b from-[#041022] to-[#062036]">
-                  <div className="flex items-center justify-between text-sm text-slate-400">
+              <div className="rounded-3xl overflow-hidden shadow-elegant ring-1 ring-border bg-card">
+                <div className="p-6 bg-gradient-to-b from-card to-muted/20">
+                  <div className="flex items-center justify-between text-sm text-muted-foreground">
                     <div>Project: Acme</div>
                     <div>Mode: Assist</div>
                   </div>
-                  <pre className="mt-4 bg-[#061323] text-[#bfe1ff] rounded-md p-4 text-sm overflow-auto h-56">
+                  <pre className="mt-4 bg-muted text-foreground rounded-md p-4 text-sm overflow-auto h-56">
                   {`# Assistent: Neues Meeting anlegen
 User: Morgen 10:00
 Assistant: Meeting erstellt — Einladungen versendet
@@ -143,8 +147,8 @@ Assistant: Meeting erstellt — Einladungen versendet
 Assistant: Vorschlag für Antwort generiert (Tonalität: freundlich)`}
                   </pre>
                   <div className="mt-4 flex items-center gap-3">
-                    <Button size="sm" className="bg-[#1f6ae0] text-white">Integrate</Button>
-                    <Button size="sm" variant="outline" className="bg-[#1f6ae0]">Open Dashboard</Button>
+                    <Button size="sm" className="bg-primary text-primary-foreground">Integrate</Button>
+                    <Button size="sm" variant="outline">Open Dashboard</Button>
                   </div>
                 </div>
               </div>
