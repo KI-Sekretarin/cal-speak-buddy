@@ -67,7 +67,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           {/* Logo */}
           <Link to="/admin" className="flex items-center gap-2 font-semibold text-xl">
             <div className="h-8 w-8 rounded-lg bg-gradient-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold">KI</span>
+              <span className="text-white font-bold">KI</span>
             </div>
             <span className="hidden sm:inline">KI-Sekretärin</span>
           </Link>

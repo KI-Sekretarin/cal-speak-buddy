@@ -22,16 +22,16 @@ export default function FeatureModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
 
       <div className="relative z-10 max-w-3xl w-full mx-4">
-  <div className="bg-card text-card-foreground rounded-2xl overflow-hidden shadow-elegant ring-1 ring-border">
+        <div className="bg-card rounded-2xl overflow-hidden shadow-2xl ring-1 ring-black/5">
           <div className="relative">
-            <img src={feature.image} alt={feature.title} className="w-full h-64 object-cover opacity-95" />
+            <img src={feature.image} alt={feature.title} className="w-full h-64 object-cover" />
             <button
               aria-label="Close"
               onClick={onClose}
-              className="absolute right-4 top-4 inline-flex items-center justify-center h-10 w-10 rounded-lg bg-background/90 hover:bg-background shadow-lg"
+              className="absolute right-4 top-4 inline-flex items-center justify-center h-10 w-10 rounded-lg bg-white/80 dark:bg-black/60 shadow"
             >
               <X className="h-5 w-5" />
             </button>
