@@ -8,6 +8,31 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Send, CheckCircle2 } from 'lucide-react';
+import { z } from 'zod';
+
+const contactFormSchema = z.object({
+  name: z.string()
+    .trim()
+    .min(1, 'Name ist erforderlich')
+    .max(100, 'Name darf maximal 100 Zeichen lang sein'),
+  email: z.string()
+    .trim()
+    .email('Ungültige E-Mail-Adresse')
+    .max(255, 'E-Mail darf maximal 255 Zeichen lang sein'),
+  phone: z.string()
+    .trim()
+    .max(20, 'Telefonnummer darf maximal 20 Zeichen lang sein')
+    .optional()
+    .or(z.literal('')),
+  subject: z.string()
+    .trim()
+    .min(1, 'Betreff ist erforderlich')
+    .max(200, 'Betreff darf maximal 200 Zeichen lang sein'),
+  message: z.string()
+    .trim()
+    .min(1, 'Nachricht ist erforderlich')
+    .max(5000, 'Nachricht darf maximal 5000 Zeichen lang sein'),
+});
 
 interface ContactFormSettings {
   userId: string;
@@ -72,9 +97,12 @@ export default function PublicContactForm() {
 
     if (!settings) return;
 
-    // Validation
-    if (!formData.name || !formData.email || !formData.subject || !formData.message) {
-      toast.error('Bitte füllen Sie alle Pflichtfelder aus');
+    // Validate with Zod
+    const validation = contactFormSchema.safeParse(formData);
+    
+    if (!validation.success) {
+      const firstError = validation.error.errors[0];
+      toast.error(firstError.message);
       return;
     }
 
@@ -83,11 +111,11 @@ export default function PublicContactForm() {
     try {
       const { error } = await supabase.from('inquiries').insert({
         user_id: settings.userId,
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone || null,
-        subject: formData.subject,
-        message: formData.message,
+        name: validation.data.name,
+        email: validation.data.email,
+        phone: validation.data.phone || null,
+        subject: validation.data.subject,
+        message: validation.data.message,
         status: 'open',
       });
 
