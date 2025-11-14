@@ -11,12 +11,12 @@ const heroImage = 'https://images.unsplash.com/photo-1677442d019cecf3da6888533cd
 const uploadedHero = '/uploaded-hero.jpg';
 
 const featureImages = {
-  voice: 'https://images.pexels.com/photos/8728461/pexels-photo-8728461.jpeg?auto=compress&cs=tinysrgb&w=1000&h=700&fit=crop',
-  tickets: 'https://images.pexels.com/photos/5632399/pexels-photo-5632399.jpeg?auto=compress&cs=tinysrgb&w=1000&h=700&fit=crop',
-  chat: 'https://images.pexels.com/photos/3182812/pexels-photo-3182812.jpeg?auto=compress&cs=tinysrgb&w=1000&h=700&fit=crop',
-  suggestions: 'https://images.pexels.com/photos/8566532/pexels-photo-8566532.jpeg?auto=compress&cs=tinysrgb&w=1000&h=700&fit=crop',
-  automation: 'https://images.pexels.com/photos/5632399/pexels-photo-5632399.jpeg?auto=compress&cs=tinysrgb&w=1000&h=700&fit=crop',
-  analytics: 'https://images.pexels.com/photos/7974/pexels-photo.jpg?auto=compress&cs=tinysrgb&w=1000&h=700&fit=crop'
+  voice: 'https://www.homeandsmart.de/var/site/storage/images/_aliases/fixed_col_8_sm_2x/7/6/3/5/425367-1-ger-DE/sprachsteuerung-smart-home-cover.jpg',
+  tickets: 'https://www.givainc.com/images/ticket_management.png',
+  chat: 'https://framerusercontent.com/images/g0YTRh7uRHpbWQgSZz62bO050.png?width=1378&height=880',
+  suggestions: 'https://image.brigitte.de/11674268/t/jC/v2/w1440/r1.5/-/e-mail-knigge-bild.jpg',
+  automation: 'https://www.omnitracker.com/assets/images/041_News/omninet-omnitracker-bpmn-rpa-automation-740x470__FitMaxWzEyODAsMTAyNF0.jpg',
+  analytics: 'https://www.weka.io/wp-content/uploads/files/2021/09/modern-analytic.jpg'
 };
 
 export default function Index() {
