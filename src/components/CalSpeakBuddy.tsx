@@ -20,7 +20,7 @@ const CalSpeakBuddy = () => {
     const audioContext = new AudioContext();
     const arrayBuffer = await webmBlob.arrayBuffer();
     const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-    
+
     const wavBuffer = audioBufferToWav(audioBuffer);
     return new Blob([wavBuffer], { type: 'audio/wav' });
   };
@@ -82,7 +82,7 @@ const CalSpeakBuddy = () => {
 
   const startRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
+      const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           sampleRate: 44100,
           channelCount: 1,
@@ -90,11 +90,11 @@ const CalSpeakBuddy = () => {
           noiseSuppression: true,
         }
       });
-      
+
       const mediaRecorder = new MediaRecorder(stream, {
         mimeType: 'audio/webm;codecs=opus'
       });
-      
+
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
 
@@ -108,9 +108,9 @@ const CalSpeakBuddy = () => {
         const webmBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         const wavBlob = await convertToWav(webmBlob);
         setAudioBlob(wavBlob);
-        
+
         stream.getTracks().forEach(track => track.stop());
-        
+
         toast({
           title: "Aufnahme gespeichert",
           description: "Audio als WAV-Datei bereit zum Hochladen",
@@ -120,7 +120,7 @@ const CalSpeakBuddy = () => {
       mediaRecorder.start();
       setIsRecording(true);
       setAudioBlob(null);
-      
+
       toast({
         title: "Aufnahme gestartet",
         description: "Sprechen Sie jetzt...",
@@ -147,32 +147,36 @@ const CalSpeakBuddy = () => {
 
     setIsUploading(true);
     try {
+      // Sende Audio direkt an lokalen Whisper-Server
       const formData = new FormData();
       formData.append('file', audioBlob, 'recording.wav');
 
-      const response = await fetch('https://n8n-service-jm5f.onrender.com/webhook-test/audio-to-transcribe', {
+      const response = await fetch('http://localhost:9000/transcribe-file', {
         method: 'POST',
-        mode: 'no-cors', // Workaround für CORS-Problem
         body: formData,
       });
 
-      // Da wir no-cors verwenden, nehmen wir an, dass der Upload erfolgreich war
-      // und simulieren eine Transkription für die Bestätigung
-      const result = "Transkription empfangen - bereit zur Bestätigung";
-      setTranscription(result);
+      if (!response.ok) {
+        throw new Error(`Transkription fehlgeschlagen: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+
+      // Zeige die echte Transkription vom Whisper-Server
+      setTranscription(result.text);
       setIsConfirmationPending(true);
 
       toast({
-        title: "Audio hochgeladen",
-        description: "Bitte bestätigen Sie den Befehl",
+        title: "Transkription erfolgreich",
+        description: `Audio transkribiert (${result.duration?.toFixed(1)}s)`,
       });
-      
+
       setAudioBlob(null);
     } catch (error) {
-      console.error('Upload error:', error);
+      console.error('Transcription error:', error);
       toast({
-        title: "Upload-Fehler",
-        description: error instanceof Error ? error.message : "Unbekannter Fehler",
+        title: "Transkriptions-Fehler",
+        description: error instanceof Error ? error.message : "Whisper-Server nicht erreichbar. Läuft er auf Port 9000?",
         variant: "destructive",
       });
     } finally {
@@ -190,7 +194,7 @@ const CalSpeakBuddy = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           transcript: transcription,
           confirmed: true,
           timestamp: new Date().toISOString()
@@ -270,10 +274,10 @@ const CalSpeakBuddy = () => {
               )}
 
               <p className="text-white/80 font-medium text-lg">
-                {isRecording 
-                  ? "Aufnahme läuft..." 
-                  : audioBlob 
-                    ? "Aufnahme bereit" 
+                {isRecording
+                  ? "Aufnahme läuft..."
+                  : audioBlob
+                    ? "Aufnahme bereit"
                     : "Zum Starten klicken"
                 }
               </p>
@@ -283,13 +287,13 @@ const CalSpeakBuddy = () => {
             {audioBlob && (
               <div className="space-y-4 animate-fade-in">
                 <div className="backdrop-blur-sm bg-white/5 rounded-2xl p-4 border border-white/10">
-                  <audio 
-                    controls 
+                  <audio
+                    controls
                     src={URL.createObjectURL(audioBlob)}
                     className="w-full [&::-webkit-media-controls-panel]:bg-white/10 [&::-webkit-media-controls-panel]:rounded-lg"
                   />
                 </div>
-                
+
                 <button
                   onClick={uploadAudio}
                   disabled={isUploading}
@@ -328,7 +332,7 @@ const CalSpeakBuddy = () => {
                 <div className="backdrop-blur-sm bg-white/5 rounded-2xl p-6 border border-white/10 space-y-4">
                   <h3 className="text-white font-semibold text-lg">Befehl bestätigen</h3>
                   <p className="text-white/90 leading-relaxed whitespace-pre-wrap">{transcription}</p>
-                  
+
                   <div className="flex gap-3 pt-2">
                     <button
                       onClick={confirmCommand}
@@ -340,7 +344,7 @@ const CalSpeakBuddy = () => {
                         {isProcessingCommand ? "Wird verarbeitet..." : "Bestätigen"}
                       </div>
                     </button>
-                    
+
                     <button
                       onClick={discardTranscription}
                       disabled={isProcessingCommand}
@@ -381,7 +385,7 @@ const CalSpeakBuddy = () => {
           {/* Footer */}
           <div className="px-8 py-4 bg-white/5 border-t border-white/10">
             <p className="text-white/40 text-xs text-center font-mono">
-              kisekretaerin.app.n8n.cloud
+              Lokale Whisper-Transkription • Port 9000
             </p>
           </div>
         </div>
