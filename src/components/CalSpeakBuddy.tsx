@@ -1,8 +1,8 @@
 import React, { useState, useRef } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Mic, Square, Upload } from 'lucide-react';
+import { Mic, Square, Upload, Check, X, Edit2, Send } from 'lucide-react';
 
 const CalSpeakBuddy = () => {
   const { toast } = useToast();
@@ -10,11 +10,15 @@ const CalSpeakBuddy = () => {
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [transcription, setTranscription] = useState<string>('');
+  const [editedTranscription, setEditedTranscription] = useState<string>('');
+  const [isEditing, setIsEditing] = useState(false);
   const [isConfirmationPending, setIsConfirmationPending] = useState(false);
-  const [commandResponse, setCommandResponse] = useState<string>('');
-  const [isProcessingCommand, setIsProcessingCommand] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+
+  // n8n Webhook URL - kann später in Settings konfigurierbar gemacht werden
+  const WEBHOOK_URL = 'https://n8n-service-jm5f.onrender.com/webhook-test/audio-to-transcribe';
 
   const convertToWav = async (webmBlob: Blob): Promise<Blob> => {
     const audioContext = new AudioContext();
@@ -33,7 +37,6 @@ const CalSpeakBuddy = () => {
     let offset = 0;
     let pos = 0;
 
-    // Write WAV header
     const setUint16 = (data: number) => {
       view.setUint16(pos, data, true);
       pos += 2;
@@ -45,22 +48,22 @@ const CalSpeakBuddy = () => {
 
     // "RIFF" chunk descriptor
     setUint32(0x46464952); // "RIFF"
-    setUint32(length - 8); // file length - 8
+    setUint32(length - 8);
     setUint32(0x45564157); // "WAVE"
 
     // "fmt " sub-chunk
     setUint32(0x20746d66); // "fmt "
-    setUint32(16); // SubChunk1Size
-    setUint16(1); // AudioFormat (PCM)
+    setUint32(16);
+    setUint16(1); // PCM
     setUint16(buffer.numberOfChannels);
     setUint32(buffer.sampleRate);
-    setUint32(buffer.sampleRate * 2 * buffer.numberOfChannels); // byte rate
-    setUint16(buffer.numberOfChannels * 2); // block align
-    setUint16(16); // bits per sample
+    setUint32(buffer.sampleRate * 2 * buffer.numberOfChannels);
+    setUint16(buffer.numberOfChannels * 2);
+    setUint16(16);
 
     // "data" sub-chunk
     setUint32(0x61746164); // "data"
-    setUint32(length - pos - 4); // SubChunk2Size
+    setUint32(length - pos - 4);
 
     // Write interleaved data
     for (let i = 0; i < buffer.numberOfChannels; i++) {
@@ -120,6 +123,9 @@ const CalSpeakBuddy = () => {
       mediaRecorder.start();
       setIsRecording(true);
       setAudioBlob(null);
+      setTranscription('');
+      setEditedTranscription('');
+      setIsConfirmationPending(false);
 
       toast({
         title: "Aufnahme gestartet",
@@ -147,7 +153,6 @@ const CalSpeakBuddy = () => {
 
     setIsUploading(true);
     try {
-      // Sende Audio direkt an lokalen Whisper-Server
       const formData = new FormData();
       formData.append('file', audioBlob, 'recording.wav');
 
@@ -162,9 +167,10 @@ const CalSpeakBuddy = () => {
 
       const result = await response.json();
 
-      // Zeige die echte Transkription vom Whisper-Server
       setTranscription(result.text);
+      setEditedTranscription(result.text);
       setIsConfirmationPending(true);
+      setIsEditing(false);
 
       toast({
         title: "Transkription erfolgreich",
@@ -184,46 +190,53 @@ const CalSpeakBuddy = () => {
     }
   };
 
-  const confirmCommand = async () => {
-    setIsProcessingCommand(true);
+  const sendToWebhook = async () => {
+    setIsSending(true);
     try {
-      // Send transcript to webhook
-      await fetch('https://n8n-service-jm5f.onrender.com/webhook-test/audio-to-transcribe', {
+      const response = await fetch(WEBHOOK_URL, {
         method: 'POST',
-        mode: 'no-cors', // Workaround für CORS-Problem
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          transcript: transcription,
-          confirmed: true,
-          timestamp: new Date().toISOString()
+          transcript: editedTranscription,
+          originalTranscript: transcription,
+          wasEdited: editedTranscription !== transcription,
+          timestamp: new Date().toISOString(),
         }),
       });
 
-      // Da wir no-cors verwenden, nehmen wir an, dass es erfolgreich war
-      setCommandResponse("Transkript erfolgreich gesendet!");
-      setIsConfirmationPending(false);
+      if (!response.ok) {
+        throw new Error(`Webhook-Fehler: ${response.statusText}`);
+      }
 
       toast({
-        title: "Befehl erfolgreich",
-        description: "Transkript wurde an den Webhook gesendet",
+        title: "Erfolgreich gesendet",
+        description: "Transkript wurde an n8n Webhook gesendet",
       });
+
+      // Reset nach erfolgreichem Senden
+      setTranscription('');
+      setEditedTranscription('');
+      setIsConfirmationPending(false);
+      setIsEditing(false);
     } catch (error) {
-      console.error('Command error:', error);
+      console.error('Webhook error:', error);
       toast({
-        title: "Befehlsfehler",
-        description: error instanceof Error ? error.message : "Unbekannter Fehler",
+        title: "Fehler beim Senden",
+        description: error instanceof Error ? error.message : "Webhook nicht erreichbar",
         variant: "destructive",
       });
     } finally {
-      setIsProcessingCommand(false);
+      setIsSending(false);
     }
   };
 
   const discardTranscription = () => {
     setTranscription('');
+    setEditedTranscription('');
     setIsConfirmationPending(false);
+    setIsEditing(false);
     toast({
       title: "Verworfen",
       description: "Transkript wurde gelöscht",
@@ -231,165 +244,172 @@ const CalSpeakBuddy = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Animated background elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 -left-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/4 -right-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
-      </div>
-
-      <div className="w-full max-w-md relative z-10">
-        {/* Main Card with Glassmorphism */}
-        <div className="backdrop-blur-xl bg-white/5 rounded-3xl border border-white/10 shadow-2xl overflow-hidden">
-          <div className="p-8 space-y-8">
-            {/* Header */}
-            <div className="text-center space-y-2">
-              <h1 className="text-3xl font-bold text-white">Voice Recorder</h1>
-              <p className="text-white/60 text-sm">Aufnahme starten und transkribieren</p>
-            </div>
-
-            {/* Recording Interface */}
-            <div className="flex flex-col items-center gap-6">
-              {!isRecording ? (
-                <button
-                  onClick={startRecording}
-                  disabled={isUploading}
-                  className="relative group"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full blur-xl opacity-75 group-hover:opacity-100 transition-opacity" />
-                  <div className="relative w-20 h-20 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center transform transition-transform group-hover:scale-105 group-active:scale-95">
-                    <Mic className="h-10 w-10 text-white" />
-                  </div>
-                </button>
-              ) : (
-                <button
-                  onClick={stopRecording}
-                  className="relative group"
-                >
-                  <div className="absolute inset-0 bg-red-500 rounded-full blur-xl opacity-75 animate-pulse" />
-                  <div className="relative w-20 h-20 bg-gradient-to-br from-red-500 to-pink-500 rounded-full flex items-center justify-center transform transition-transform group-hover:scale-105">
-                    <Square className="h-8 w-8 text-white fill-white" />
-                  </div>
-                </button>
-              )}
-
-              <p className="text-white/80 font-medium text-lg">
-                {isRecording
-                  ? "Aufnahme läuft..."
-                  : audioBlob
-                    ? "Aufnahme bereit"
-                    : "Zum Starten klicken"
-                }
-              </p>
-            </div>
-
-            {/* Audio Preview & Upload */}
-            {audioBlob && (
-              <div className="space-y-4 animate-fade-in">
-                <div className="backdrop-blur-sm bg-white/5 rounded-2xl p-4 border border-white/10">
-                  <audio
-                    controls
-                    src={URL.createObjectURL(audioBlob)}
-                    className="w-full [&::-webkit-media-controls-panel]:bg-white/10 [&::-webkit-media-controls-panel]:rounded-lg"
-                  />
+    <div className="h-full w-full flex flex-col gap-6">
+      {/* Recording Section - Takes up top half */}
+      <div className="flex-1 min-h-[400px] rounded-3xl border-2 border-primary/20 bg-gradient-to-br from-card via-card to-primary/5 hover:border-primary/40 hover:shadow-2xl transition-all duration-500 overflow-hidden">
+        <div className="h-full flex flex-col items-center justify-center p-8 space-y-8">
+          {/* Recording Button */}
+          <div className="relative">
+            {!isRecording ? (
+              <button
+                onClick={startRecording}
+                disabled={isUploading || isSending}
+                className="relative group disabled:opacity-50 disabled:cursor-not-allowed"
+                aria-label="Aufnahme starten"
+              >
+                <div className="absolute inset-0 bg-primary/30 rounded-full blur-2xl opacity-75 group-hover:opacity-100 transition-opacity animate-pulse" />
+                <div className="relative w-32 h-32 bg-gradient-to-br from-primary via-primary to-accent rounded-full flex items-center justify-center transform transition-all group-hover:scale-110 group-active:scale-95 shadow-2xl">
+                  <Mic className="h-16 w-16 text-primary-foreground" />
                 </div>
-
-                <button
-                  onClick={uploadAudio}
-                  disabled={isUploading}
-                  className="w-full relative group overflow-hidden rounded-2xl"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-blue-500 transition-transform group-hover:scale-105" />
-                  <div className="relative px-6 py-4 flex items-center justify-center gap-2 text-white font-semibold">
-                    <Upload className="h-5 w-5" />
-                    {isUploading ? "Wird hochgeladen..." : "Transkribieren"}
-                  </div>
-                </button>
-              </div>
-            )}
-
-            {/* Transcription Result */}
-            {transcription && !isConfirmationPending && !commandResponse && (
-              <div className="space-y-3 animate-fade-in">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-white font-semibold">Transkription</h3>
-                  <button
-                    onClick={() => setTranscription('')}
-                    className="text-white/60 hover:text-white/80 text-sm transition-colors"
-                  >
-                    Löschen
-                  </button>
+              </button>
+            ) : (
+              <button
+                onClick={stopRecording}
+                className="relative group"
+                aria-label="Aufnahme stoppen"
+              >
+                <div className="absolute inset-0 bg-destructive/30 rounded-full blur-2xl opacity-75 animate-pulse" />
+                <div className="relative w-32 h-32 bg-gradient-to-br from-destructive to-destructive/80 rounded-full flex items-center justify-center transform transition-all group-hover:scale-110 shadow-2xl animate-pulse">
+                  <Square className="h-14 w-14 text-destructive-foreground fill-destructive-foreground" />
                 </div>
-                <div className="backdrop-blur-sm bg-white/5 rounded-2xl p-6 border border-white/10">
-                  <p className="text-white/90 leading-relaxed whitespace-pre-wrap">{transcription}</p>
-                </div>
-              </div>
-            )}
-
-            {/* Confirmation Step */}
-            {isConfirmationPending && (
-              <div className="space-y-4 animate-fade-in">
-                <div className="backdrop-blur-sm bg-white/5 rounded-2xl p-6 border border-white/10 space-y-4">
-                  <h3 className="text-white font-semibold text-lg">Befehl bestätigen</h3>
-                  <p className="text-white/90 leading-relaxed whitespace-pre-wrap">{transcription}</p>
-
-                  <div className="flex gap-3 pt-2">
-                    <button
-                      onClick={confirmCommand}
-                      disabled={isProcessingCommand}
-                      className="flex-1 relative group overflow-hidden rounded-xl"
-                    >
-                      <div className="absolute inset-0 bg-gradient-to-r from-green-500 to-emerald-500 transition-transform group-hover:scale-105" />
-                      <div className="relative px-6 py-3 flex items-center justify-center text-white font-semibold">
-                        {isProcessingCommand ? "Wird verarbeitet..." : "Bestätigen"}
-                      </div>
-                    </button>
-
-                    <button
-                      onClick={discardTranscription}
-                      disabled={isProcessingCommand}
-                      className="flex-1 relative group overflow-hidden rounded-xl"
-                    >
-                      <div className="absolute inset-0 bg-white/10 transition-all group-hover:bg-white/20" />
-                      <div className="relative px-6 py-3 flex items-center justify-center text-white font-semibold border border-white/20 rounded-xl">
-                        Verwerfen
-                      </div>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Command Response */}
-            {commandResponse && (
-              <div className="space-y-3 animate-fade-in">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-white font-semibold">Bestätigung</h3>
-                  <button
-                    onClick={() => {
-                      setCommandResponse('');
-                      setTranscription('');
-                    }}
-                    className="text-white/60 hover:text-white/80 text-sm transition-colors"
-                  >
-                    Schließen
-                  </button>
-                </div>
-                <div className="backdrop-blur-sm bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-2xl p-6 border border-green-500/20">
-                  <p className="text-white/90 leading-relaxed whitespace-pre-wrap">{commandResponse}</p>
-                </div>
-              </div>
+              </button>
             )}
           </div>
 
-          {/* Footer */}
-          <div className="px-8 py-4 bg-white/5 border-t border-white/10">
-            <p className="text-white/40 text-xs text-center font-mono">
-              Lokale Whisper-Transkription • Port 9000
+          {/* Status Text */}
+          <div className="text-center space-y-3">
+            <h2 className="text-3xl font-bold text-foreground">
+              {isRecording
+                ? "🎙️ Aufnahme läuft..."
+                : audioBlob
+                  ? "✓ Aufnahme bereit"
+                  : "Bereit zur Aufnahme"
+              }
+            </h2>
+            <p className="text-muted-foreground text-lg max-w-md">
+              {isRecording
+                ? "Sprechen Sie jetzt deutlich ins Mikrofon"
+                : audioBlob
+                  ? "Ihre Aufnahme wurde erfolgreich gespeichert"
+                  : "Klicken Sie auf das Mikrofon, um eine Sprachaufnahme zu starten"
+              }
             </p>
           </div>
+
+          {/* Audio Preview & Upload */}
+          {audioBlob && (
+            <div className="w-full max-w-2xl space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="rounded-2xl p-6 border-2 border-primary/20 bg-card/50 backdrop-blur-sm">
+                <audio
+                  controls
+                  src={URL.createObjectURL(audioBlob)}
+                  className="w-full"
+                />
+              </div>
+
+              <Button
+                onClick={uploadAudio}
+                disabled={isUploading}
+                size="lg"
+                className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-primary to-accent hover:shadow-xl transition-all duration-300"
+              >
+                <Upload className="h-6 w-6 mr-2" />
+                {isUploading ? "Wird transkribiert..." : "Jetzt transkribieren"}
+              </Button>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Transcription Section - Takes up bottom half */}
+      {isConfirmationPending && (
+        <div className="flex-1 min-h-[400px] rounded-3xl border-2 border-accent/20 bg-gradient-to-br from-card via-card to-accent/5 hover:border-accent/40 hover:shadow-2xl transition-all duration-500 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="h-full flex flex-col p-8">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="h-12 w-12 rounded-xl bg-accent/20 flex items-center justify-center">
+                  <Edit2 className="h-6 w-6 text-accent" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold text-foreground">Transkript bearbeiten</h3>
+                  <p className="text-muted-foreground text-sm">Überprüfen und anpassen vor dem Senden</p>
+                </div>
+              </div>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsEditing(!isEditing)}
+                className="gap-2"
+              >
+                <Edit2 className="h-4 w-4" />
+                {isEditing ? "Vorschau" : "Bearbeiten"}
+              </Button>
+            </div>
+
+            {/* Editable Transcript */}
+            <div className="flex-1 mb-6">
+              {isEditing ? (
+                <Textarea
+                  value={editedTranscription}
+                  onChange={(e) => setEditedTranscription(e.target.value)}
+                  className="h-full min-h-[200px] text-lg p-6 rounded-2xl border-2 border-primary/20 bg-card resize-none focus:border-accent/50 transition-colors"
+                  placeholder="Ihr Transkript erscheint hier..."
+                />
+              ) : (
+                <div className="h-full rounded-2xl p-6 border-2 border-primary/20 bg-card overflow-y-auto">
+                  <p className="text-lg text-foreground leading-relaxed whitespace-pre-wrap">
+                    {editedTranscription || "Kein Text vorhanden"}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="grid grid-cols-2 gap-4">
+              <Button
+                onClick={discardTranscription}
+                disabled={isSending}
+                variant="outline"
+                size="lg"
+                className="h-14 text-lg font-semibold border-2 hover:bg-destructive/10 hover:border-destructive/50 hover:text-destructive transition-all"
+              >
+                <X className="h-5 w-5 mr-2" />
+                Verwerfen
+              </Button>
+
+              <Button
+                onClick={sendToWebhook}
+                disabled={isSending || !editedTranscription.trim()}
+                size="lg"
+                className="h-14 text-lg font-semibold bg-gradient-to-r from-accent to-accent/80 hover:shadow-xl transition-all duration-300"
+              >
+                <Send className="h-5 w-5 mr-2" />
+                {isSending ? "Wird gesendet..." : "An n8n senden"}
+              </Button>
+            </div>
+
+            {/* Info Footer */}
+            {editedTranscription !== transcription && (
+              <div className="mt-4 p-3 rounded-xl bg-accent/10 border border-accent/20">
+                <p className="text-sm text-accent font-medium text-center">
+                  ✏️ Transkript wurde bearbeitet
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Info Footer when no transcription */}
+      {!isConfirmationPending && (
+        <div className="px-6 py-4 rounded-2xl bg-secondary/30 border border-primary/10">
+          <p className="text-muted-foreground text-sm text-center font-mono">
+            🎤 Lokale Whisper-Transkription (Port 9000) → 🔗 n8n Webhook Integration
+          </p>
+        </div>
+      )}
     </div>
   );
 };

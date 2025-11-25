@@ -29,3 +29,12 @@ __pycache__
 *.sln
 *.sw?
 .env
+
+# n8n Backups & Exports
+n8n-backup-*.sql
+n8n-workflows.sql
+workflows-export.json
+workflows-full.csv
+credentials.csv
+settings.csv
+n8n-export-*

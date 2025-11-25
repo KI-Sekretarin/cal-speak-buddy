@@ -2,8 +2,9 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { Mic, Mail, MessageSquare, Sparkles, Zap, TrendingUp, Brain, Clock, CheckCircle, Users } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import FeatureModal from '@/components/FeatureModal';
+import ThemeToggle from '@/components/ThemeToggle';
 
 // Premium images from Pexels and Unsplash - carefully curated for each feature
 // NOTE: Replace the file at `public/uploaded-hero.jpg` with the image you uploaded.
@@ -21,10 +22,17 @@ const featureImages = {
 
 export default function Index() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
 
   const [selectedFeature, setSelectedFeature] = useState<any | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+
+  // Redirect authenticated users to dashboard
+  // useEffect(() => {
+  //   if (!loading && user) {
+  //     navigate('/admin');
+  //   }
+  // }, [user, loading, navigate]);
 
   const features = [
     {
@@ -147,6 +155,11 @@ export default function Index() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Fixed Theme Toggle in top right */}
+      <div className="fixed top-4 right-4 z-50">
+        <ThemeToggle />
+      </div>
+
       {/* Hero Section - Überarbeitet, angepasst an bestehendes Farbschema */}
       <section className="relative overflow-hidden min-h-[80vh] flex items-center bg-gradient-to-b from-primary/10 to-background">
         <div className="container mx-auto">
