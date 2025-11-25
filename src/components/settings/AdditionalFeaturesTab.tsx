@@ -1,12 +1,13 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { CompanyProfile } from '@/types/profile';
-import { Clock, Globe, CreditCard, Truck, Award } from 'lucide-react';
+import { Clock, Globe, CreditCard, Truck, Award, Calendar } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useState } from 'react';
 import { Plus, X } from 'lucide-react';
+import GoogleCalendarConnect from '@/components/GoogleCalendarConnect';
 
 interface AdditionalFeaturesTabProps {
   profile: CompanyProfile | null;
@@ -35,13 +36,13 @@ export function AdditionalFeaturesTab({ profile, onUpdate }: AdditionalFeaturesT
     if (!hours[day]) {
       hours[day] = { open: '09:00', close: '17:00' };
     }
-    
+
     if (field === 'closed') {
       hours[day].closed = value as boolean;
     } else {
       hours[day][field] = value as string;
     }
-    
+
     onUpdate('business_hours', hours);
   };
 
@@ -61,6 +62,24 @@ export function AdditionalFeaturesTab({ profile, onUpdate }: AdditionalFeaturesT
 
   return (
     <div className="space-y-6">
+      {/* Integrations */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Calendar className="h-5 w-5" />
+            <CardTitle>Integrationen</CardTitle>
+          </div>
+          <CardDescription>
+            Verbinden Sie externe Dienste mit Ihrem Account.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="max-w-md">
+            <GoogleCalendarConnect onTokenChange={() => { }} />
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Business Hours */}
       <Card>
         <CardHeader>
@@ -76,7 +95,7 @@ export function AdditionalFeaturesTab({ profile, onUpdate }: AdditionalFeaturesT
           {daysOfWeek.map((day) => {
             const hours = profile?.business_hours?.[day];
             const isClosed = hours?.closed || false;
-            
+
             return (
               <div key={day} className="grid grid-cols-12 gap-2 items-center">
                 <div className="col-span-3">

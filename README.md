@@ -1,3 +1,11 @@
+# 📅 CalSpeakBuddy - Local AI Calendar Assistant
+
+**🚀 [CLICK HERE FOR SETUP GUIDE (SETUP_GUIDE.md)](./SETUP_GUIDE.md)**
+
+This project uses **Local AI (Ollama + Whisper)** to control your Google Calendar via voice.
+
+---
+
 # Welcome to your Lovable project
 
 ## Project info

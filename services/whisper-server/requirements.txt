@@ -1,4 +1,11 @@
-fastapi==0.115.0
-uvicorn[standard]==0.30.6
-faster-whisper==1.0.2
-python-multipart==0.0.9
+fastapi
+uvicorn
+python-multipart
+watchfiles
+openai
+python-dotenv
+google-auth
+google-auth-oauthlib
+google-auth-httplib2
+google-api-python-client
+faster-whisper

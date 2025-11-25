@@ -38,3 +38,7 @@ workflows-full.csv
 credentials.csv
 settings.csv
 n8n-export-*
+
+# Google Credentials
+credentials.json
+token.json
