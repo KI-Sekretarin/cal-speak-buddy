@@ -85,113 +85,114 @@ export const VoiceInterface: React.FC<VoiceInterfaceProps> = ({
         description: 'Zugriff auf Mikrofon verweigert',
         variant: 'destructive',
       });
-    };
-
-    const stopListening = () => {
-      if (mediaRecorderRef.current && isListening) {
-        mediaRecorderRef.current.stop();
-        setIsListening(false);
-        setTranscript('Verarbeite...');
-      }
-    };
-
-    const processAudio = async (audioBlob: Blob) => {
-      try {
-        const base64Audio = await blobToBase64(audioBlob);
-
-        const { data, error } = await supabase.functions.invoke<{ text: string }>('speech-to-text', {
-          body: { audio: base64Audio },
-        });
-
-        if (error) {
-          throw error;
-        }
-
-        const text = data?.text ?? '';
-        setTranscript(text);
-      
-        if (text.trim()) {
-          onVoiceCommand(text);
-          toast({
-            title: 'Befehl erkannt',
-            description: text,
-          });
-        }
-      } catch (error) {
-        console.error('Error processing audio:', error);
-        setTranscript('Fehler bei der Spracherkennung');
-        toast({
-          title: 'Verarbeitungsfehler',
-          description: 'Spracherkennung fehlgeschlagen',
-          variant: 'destructive',
-        });
-      }
-    };
-
-    return (
-      <Card className="w-full max-w-md mx-auto shadow-elegant">
-        <CardHeader>
-          <CardTitle>Sprachsteuerung</CardTitle>
-          <CardDescription>
-            Steuern Sie das Kalender-Interface per Sprachbefehl — drücken Sie auf das Mikrofon und sprechen Sie.
-          </CardDescription>
-        </CardHeader>
-
-        <CardContent className="pt-0 text-center">
-          <div className="flex justify-center mb-4">
-            {!isListening ? (
-              <Button
-                variant="voice"
-                size="voice-large"
-                onClick={startListening}
-                disabled={isProcessing}
-                aria-pressed={isListening}
-                aria-label="Sprachaufnahme starten"
-              >
-                <Mic className="h-6 w-6" />
-              </Button>
-            ) : (
-              <Button
-                variant="voice-listening"
-                size="voice-large"
-                onClick={stopListening}
-                aria-pressed={isListening}
-                aria-label="Sprachaufnahme stoppen"
-              >
-                <Square className="h-5 w-5" />
-              </Button>
-            )}
-          </div>
-
-          <div className="mb-4">
-            <h4 className="text-base font-medium">
-              {isListening
-                ? 'Sprechen Sie jetzt...'
-                : isProcessing
-                ? 'Verarbeite Befehl...'
-                : 'Bereit für Sprachbefehle'}
-            </h4>
-
-            <div
-              className="mt-3 p-3 bg-muted rounded-lg min-h-[60px] flex items-center justify-center"
-              role="status"
-              aria-live="polite"
-            >
-              <p className="text-sm text-muted-foreground italic">{transcript ? `"${transcript}"` : '—'}</p>
-            </div>
-          </div>
-        </CardContent>
-
-        <CardFooter className="flex-col items-start gap-2">
-          <div className="w-full text-sm text-muted-foreground">
-            <p className="font-medium mb-1">Beispiele</p>
-            <ul className="list-disc pl-5 space-y-1">
-              <li>Lege ein Meeting mit Frau Huber am Dienstag um 10 Uhr an</li>
-              <li>Zeige mir meine Termine für morgen</li>
-              <li>Lösche das Meeting um 14 Uhr</li>
-            </ul>
-          </div>
-        </CardFooter>
-      </Card>
-    );
+    }
   };
+
+  const stopListening = () => {
+    if (mediaRecorderRef.current && isListening) {
+      mediaRecorderRef.current.stop();
+      setIsListening(false);
+      setTranscript('Verarbeite...');
+    }
+  };
+
+  const processAudio = async (audioBlob: Blob) => {
+    try {
+      const base64Audio = await blobToBase64(audioBlob);
+
+      const { data, error } = await supabase.functions.invoke<{ text: string }>('speech-to-text', {
+        body: { audio: base64Audio },
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      const text = data?.text ?? '';
+      setTranscript(text);
+    
+      if (text.trim()) {
+        onVoiceCommand(text);
+        toast({
+          title: 'Befehl erkannt',
+          description: text,
+        });
+      }
+    } catch (error) {
+      console.error('Error processing audio:', error);
+      setTranscript('Fehler bei der Spracherkennung');
+      toast({
+        title: 'Verarbeitungsfehler',
+        description: 'Spracherkennung fehlgeschlagen',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  return (
+    <Card className="w-full max-w-md mx-auto shadow-elegant">
+      <CardHeader>
+        <CardTitle>Sprachsteuerung</CardTitle>
+        <CardDescription>
+          Steuern Sie das Kalender-Interface per Sprachbefehl — drücken Sie auf das Mikrofon und sprechen Sie.
+        </CardDescription>
+      </CardHeader>
+
+      <CardContent className="pt-0 text-center">
+        <div className="flex justify-center mb-4">
+          {!isListening ? (
+            <Button
+              variant="voice"
+              size="voice-large"
+              onClick={startListening}
+              disabled={isProcessing}
+              aria-pressed={isListening}
+              aria-label="Sprachaufnahme starten"
+            >
+              <Mic className="h-6 w-6" />
+            </Button>
+          ) : (
+            <Button
+              variant="voice-listening"
+              size="voice-large"
+              onClick={stopListening}
+              aria-pressed={isListening}
+              aria-label="Sprachaufnahme stoppen"
+            >
+              <Square className="h-5 w-5" />
+            </Button>
+          )}
+        </div>
+
+        <div className="mb-4">
+          <h4 className="text-base font-medium">
+            {isListening
+              ? 'Sprechen Sie jetzt...'
+              : isProcessing
+              ? 'Verarbeite Befehl...'
+              : 'Bereit für Sprachbefehle'}
+          </h4>
+
+          <div
+            className="mt-3 p-3 bg-muted rounded-lg min-h-[60px] flex items-center justify-center"
+            role="status"
+            aria-live="polite"
+          >
+            <p className="text-sm text-muted-foreground italic">{transcript ? `"${transcript}"` : '—'}</p>
+          </div>
+        </div>
+      </CardContent>
+
+      <CardFooter className="flex-col items-start gap-2">
+        <div className="w-full text-sm text-muted-foreground">
+          <p className="font-medium mb-1">Beispiele</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Lege ein Meeting mit Frau Huber am Dienstag um 10 Uhr an</li>
+            <li>Zeige mir meine Termine für morgen</li>
+            <li>Lösche das Meeting um 14 Uhr</li>
+          </ul>
+        </div>
+      </CardFooter>
+    </Card>
+  );
+};
