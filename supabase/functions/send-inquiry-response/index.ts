@@ -1,8 +1,23 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "https://esm.sh/resend@4.0.0";
+import nodemailer from "npm:nodemailer@6.9.7";
 
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+const resendApiKey = Deno.env.get("RESEND_API_KEY");
+const resend = resendApiKey ? new Resend(resendApiKey) : null;
+
+// SMTP Configuration
+const smtpConfig = {
+  host: Deno.env.get("SMTP_HOST"),
+  port: parseInt(Deno.env.get("SMTP_PORT") || "587"),
+  secure: Deno.env.get("SMTP_SECURE") === "true", // true for 465, false for other ports
+  auth: {
+    user: Deno.env.get("SMTP_USER"),
+    pass: Deno.env.get("SMTP_PASS"),
+  },
+};
+
+const useSmtp = smtpConfig.host && smtpConfig.auth.user && smtpConfig.auth.pass;
 
 // HTML escape function to prevent XSS attacks
 const escapeHtml = (unsafe: string): string => {
@@ -50,12 +65,12 @@ const handler = async (req: Request): Promise<Response> => {
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
-    
+
     // Verify user authentication and get user
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser(
       authHeader.replace("Bearer ", "")
     );
-    
+
     if (authError || !user) {
       console.error("Auth error:", authError);
       return new Response(
@@ -92,7 +107,7 @@ const handler = async (req: Request): Promise<Response> => {
     if (!inquiry || !inquiry.email) {
       throw new Error("Keine E-Mail-Adresse gefunden");
     }
-    
+
     // Verify user owns this inquiry
     if (inquiry.user_id !== user.id) {
       console.error("User does not own inquiry");
@@ -102,33 +117,120 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // Fetch user profile for company details
+    const { data: profile } = await supabaseClient
+      .from("profiles")
+      .select("*")
+      .eq("id", user.id)
+      .single();
+
     console.log(`Sending email to ${inquiry.email} for inquiry ${inquiry.id}`);
 
-    // Send email via Resend
-    const emailResponse = await resend.emails.send({
-      from: "KI-Sekretärin <onboarding@resend.dev>",
-      to: [inquiry.email],
-      subject: `Re: ${escapeHtml(inquiry.subject)}`,
-      html: `
-        <h2>Antwort auf Ihre Anfrage</h2>
-        <p>Hallo ${escapeHtml(inquiry.name)},</p>
-        <p>vielen Dank für Ihre Anfrage. Hier ist unsere Antwort:</p>
-        <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-          ${escapeHtml(response.suggested_response).replace(/\n/g, '<br>')}
-        </div>
-        <hr style="margin: 30px 0; border: none; border-top: 1px solid #e0e0e0;">
-        <p style="font-size: 12px; color: #666;">
-          <strong>Ihre ursprüngliche Nachricht:</strong><br>
-          ${escapeHtml(inquiry.message).replace(/\n/g, '<br>')}
-        </p>
-        <p style="font-size: 12px; color: #999; margin-top: 30px;">
-          Mit freundlichen Grüßen,<br>
-          Ihr KI-Sekretärin Team
-        </p>
-      `,
-    });
+    const companyName = profile?.company_name || "Ihr Unternehmen";
+    const logoUrl = profile?.logo_url;
+    const website = profile?.website;
+    const phone = profile?.phone;
+    const address = [
+      profile?.street,
+      profile?.street_number,
+      profile?.postal_code,
+      profile?.city
+    ].filter(Boolean).join(" ");
 
-    console.log("Email sent successfully:", emailResponse);
+    const emailHtml = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { text-align: center; margin-bottom: 30px; }
+          .logo { max-height: 80px; max-width: 200px; }
+          .content { background-color: #ffffff; padding: 20px; }
+          .response-box { background-color: #f9f9f9; padding: 20px; border-left: 4px solid #4f46e5; margin: 20px 0; border-radius: 4px; }
+          .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #666; text-align: center; }
+          .original-message { margin-top: 30px; font-size: 12px; color: #888; border-top: 1px solid #eee; padding-top: 10px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            ${logoUrl ? `<img src="${logoUrl}" alt="${escapeHtml(companyName)}" class="logo">` : `<h2>${escapeHtml(companyName)}</h2>`}
+          </div>
+
+          <div class="content">
+            <p>Hallo ${escapeHtml(inquiry.name)},</p>
+            <p>vielen Dank für Ihre Anfrage.</p>
+
+            <div class="response-box">
+              ${escapeHtml(response.suggested_response).replace(/\n/g, '<br>')}
+            </div>
+
+            <p>Mit freundlichen Grüßen,<br>${escapeHtml(companyName)}</p>
+          </div>
+
+          <div class="footer">
+            <p>
+              <strong>${escapeHtml(companyName)}</strong><br>
+              ${address ? escapeHtml(address) + '<br>' : ''}
+              ${phone ? 'Tel: ' + escapeHtml(phone) + '<br>' : ''}
+              ${website ? `<a href="${escapeHtml(website)}">${escapeHtml(website)}</a>` : ''}
+            </p>
+          </div>
+
+          <div class="original-message">
+            <strong>Ihre ursprüngliche Nachricht vom ${new Date().toLocaleDateString('de-DE')}:</strong><br>
+            <em>${escapeHtml(inquiry.message).replace(/\n/g, '<br>')}</em>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const emailSubject = `Re: ${escapeHtml(inquiry.subject)}`;
+    const fromAddress = Deno.env.get("SMTP_FROM") || `${companyName} <noreply@example.com>`;
+
+    let emailResult;
+
+    if (useSmtp) {
+      console.log("Using SMTP for email delivery...");
+      const transporter = nodemailer.createTransport(smtpConfig);
+
+      // Verify connection configuration
+      await new Promise((resolve, reject) => {
+        transporter.verify(function (error, success) {
+          if (error) {
+            console.error("SMTP Verify Error:", error);
+            reject(error);
+          } else {
+            console.log("Server is ready to take our messages");
+            resolve(success);
+          }
+        });
+      });
+
+      emailResult = await transporter.sendMail({
+        from: fromAddress,
+        to: inquiry.email,
+        subject: emailSubject,
+        html: emailHtml,
+      });
+      console.log("SMTP Email sent:", emailResult.messageId);
+
+    } else if (resend) {
+      console.log("Using Resend for email delivery...");
+      emailResult = await resend.emails.send({
+        from: "KI-Sekretärin <onboarding@resend.dev>",
+        to: [inquiry.email],
+        subject: emailSubject,
+        html: emailHtml,
+      });
+      console.log("Resend Email sent:", emailResult);
+    } else {
+      throw new Error("No email provider configured (SMTP or Resend)");
+    }
+
+    console.log("Email sent successfully");
 
     // Mark response as sent
     const { error: updateError } = await supabaseClient

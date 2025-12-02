@@ -3,7 +3,17 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Mic, Square, Upload, Check, X, Edit2, Send, Settings } from 'lucide-react';
+import { Mic, Square, Upload, Check, X, Edit2, Send, Settings, Clock, Calendar } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const CalSpeakBuddy = () => {
   const { toast } = useToast();
@@ -18,16 +28,70 @@ const CalSpeakBuddy = () => {
   const [isProcessingCommand, setIsProcessingCommand] = useState(false);
   const [commandResponse, setCommandResponse] = useState<string | null>(null);
   const [googleToken, setGoogleToken] = useState<string | null>(null);
+  const [events, setEvents] = useState<any[]>([]);
+  const [showConfirmationDialog, setShowConfirmationDialog] = useState(false);
+  const [confirmationMessage, setConfirmationMessage] = useState("");
+  const [pendingCommandText, setPendingCommandText] = useState<string>("");
+  const [timeRemaining, setTimeRemaining] = useState<string>("");
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
 
+  // Load token from localStorage on mount
   // Load token from localStorage on mount
   useEffect(() => {
     const token = localStorage.getItem('google_calendar_token');
     if (token) {
       setGoogleToken(token);
+      // Load events silently on mount
+      executeCommand("Zeige meine Termine für heute", false, true);
     }
   }, []);
+
+  // Countdown Timer Logic
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = new Date();
+      const futureEvents = events
+        .filter(e => {
+          const start = e.start.dateTime ? new Date(e.start.dateTime) : new Date(e.start.date);
+          return start > now;
+        })
+        .sort((a, b) => {
+          const startA = a.start.dateTime ? new Date(a.start.dateTime) : new Date(a.start.date);
+          const startB = b.start.dateTime ? new Date(b.start.dateTime) : new Date(b.start.date);
+          return startA.getTime() - startB.getTime();
+        });
+
+      if (futureEvents.length > 0) {
+        const next = futureEvents[0];
+        const start = next.start.dateTime ? new Date(next.start.dateTime) : new Date(next.start.date);
+        const diff = start.getTime() - now.getTime();
+
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        setTimeRemaining(`${hours}h ${minutes}m`);
+      } else {
+        setTimeRemaining("");
+      }
+    }, 60000); // Update every minute
+
+    return () => clearInterval(interval);
+  }, [events]);
+
+  const getNextEvent = () => {
+    const now = new Date();
+    const futureEvents = events
+      .filter(e => {
+        const start = e.start.dateTime ? new Date(e.start.dateTime) : new Date(e.start.date);
+        return start > now;
+      })
+      .sort((a, b) => {
+        const startA = a.start.dateTime ? new Date(a.start.dateTime) : new Date(a.start.date);
+        const startB = b.start.dateTime ? new Date(b.start.dateTime) : new Date(b.start.date);
+        return startA.getTime() - startB.getTime();
+      });
+    return futureEvents[0] || null;
+  };
 
   // n8n Webhook URL - kann später in Settings konfigurierbar gemacht werden
   const WEBHOOK_URL = 'https://n8n-service-jm5f.onrender.com/webhook-test/audio-to-transcribe';
@@ -202,48 +266,117 @@ const CalSpeakBuddy = () => {
     }
   };
 
-  const confirmCommand = async () => {
+  const executeCommand = async (text: string, dryRun: boolean, silent: boolean = false) => {
+    if (!text) return;
+
     setIsProcessingCommand(true);
+    setCommandResponse(null);
+    if (!dryRun && !silent) setEvents([]);
+
+    if (dryRun) {
+      setPendingCommandText(text);
+    }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+
     try {
-      // Send transcript to local AI Agent
+      console.log(`Sende Befehl an Backend (DryRun: ${dryRun}):`, text);
+
       const response = await fetch('http://localhost:9000/process-command', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          text: editedTranscription || transcription, // Use edited text if available
-          auth_token: googleToken, // Send the user's token
+          text: text,
+          auth_token: googleToken,
+          dry_run: dryRun
         }),
+        signal: controller.signal
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
-        throw new Error(`Server error: ${response.statusText}`);
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const result = await response.json();
+      const data = await response.json();
+      console.log("Backend Antwort:", data);
 
-      if (result.status === 'error') {
-        throw new Error(result.message);
+      if (data.status === 'confirmation_required') {
+        setConfirmationMessage(data.message);
+        setShowConfirmationDialog(true);
+        return;
       }
 
-      setCommandResponse(result.message);
-      setIsConfirmationPending(false);
+      if (data.status === 'success') {
+        if (!silent) setCommandResponse(data.message);
 
+        // Handle List Events Intent
+        if (data.intent === 'list_events' && Array.isArray(data.data)) {
+          setEvents(data.data);
+          if (!silent) {
+            toast({
+              title: "Termine geladen",
+              description: `${data.data.length} Termine gefunden.`,
+            });
+          }
+        } else {
+          if (!silent) {
+            toast({
+              title: "Erfolg!",
+              description: data.message,
+            });
+          }
+        }
+
+        // Reset UI after short delay
+        if (!silent) {
+          setTimeout(() => {
+            setIsConfirmationPending(false);
+            setTranscription('');
+            setEditedTranscription('');
+            setAudioBlob(null);
+            audioChunksRef.current = [];
+            setIsEditing(false);
+          }, 2000);
+        }
+      } else {
+        setCommandResponse(`Fehler: ${data.message}`);
+        toast({
+          title: "Fehler",
+          description: data.message,
+          variant: "destructive",
+        });
+      }
+
+    } catch (error: any) {
+      console.error('Fehler beim Ausführen des Befehls:', error);
+      let errorMessage = 'Fehler bei der Kommunikation mit dem Server.';
+
+      if (error.name === 'AbortError') {
+        errorMessage = 'Zeitüberschreitung: Der Server antwortet nicht rechtzeitig (Ollama ist beschäftigt).';
+      }
+
+      setCommandResponse(errorMessage);
       toast({
-        title: "Befehl ausgeführt",
-        description: result.message,
-      });
-    } catch (error) {
-      console.error('Command error:', error);
-      toast({
-        title: "Fehler",
-        description: error instanceof Error ? error.message : "Unbekannter Fehler",
+        title: "Verbindungsfehler",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
       setIsProcessingCommand(false);
+      clearTimeout(timeoutId);
     }
+  };
+
+  const confirmCommand = () => executeCommand(editedTranscription || transcription, true);
+
+  const executeConfirmedCommand = () => {
+    setShowConfirmationDialog(false);
+    executeCommand(pendingCommandText, false);
   };
 
   const discardTranscription = () => {
@@ -354,12 +487,106 @@ const CalSpeakBuddy = () => {
             <p className="text-muted-foreground text-sm text-center font-mono">
               🎤 Lokale Whisper-Transkription (Port 9000) → 🔗 n8n Webhook Integration
             </p>
+
+            {/* Quick Actions */}
+            <div className="w-full pt-6 border-t border-border">
+              <h3 className="text-sm font-semibold text-muted-foreground mb-3 text-center uppercase tracking-wider">Quick Actions</h3>
+              <div className="grid grid-cols-3 gap-2">
+                <Button variant="outline" className="h-auto py-3 flex flex-col gap-1 hover:bg-primary/5 hover:border-primary/30" onClick={() => executeCommand("Zeige meine Termine für heute", false)}>
+                  <span className="text-xl">📅</span>
+                  <span className="text-xs font-medium">Heute</span>
+                </Button>
+                <Button variant="outline" className="h-auto py-3 flex flex-col gap-1 hover:bg-primary/5 hover:border-primary/30" onClick={() => executeCommand("Zeige meine Termine für morgen", false)}>
+                  <span className="text-xl">⏭️</span>
+                  <span className="text-xs font-medium">Morgen</span>
+                </Button>
+                <Button variant="outline" className="h-auto py-3 flex flex-col gap-1 hover:bg-destructive/5 hover:border-destructive/30 hover:text-destructive" onClick={() => executeCommand("Lösche den nächsten Termin", true)}>
+                  <span className="text-xl">❌</span>
+                  <span className="text-xs font-medium">Löschen</span>
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Right Panel: Transcription & Actions */}
+        {/* Right Panel: Transcription & Actions & Events */}
         <div className="flex-1 p-6 bg-card/30 flex flex-col overflow-hidden">
-          {isConfirmationPending ? (
+
+          {/* Next Meeting Widget */}
+          {getNextEvent() && !isConfirmationPending && (
+            <div className="mb-6 animate-in fade-in slide-in-from-top-4 duration-500">
+              <div className="p-6 rounded-2xl bg-gradient-to-br from-primary/10 to-accent/10 border border-primary/20 relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-4 opacity-10">
+                  <Clock className="h-32 w-32" />
+                </div>
+                <div className="relative z-10">
+                  <h3 className="text-sm font-medium text-primary uppercase tracking-wider mb-1">Nächstes Meeting</h3>
+                  <h2 className="text-2xl font-bold text-foreground mb-2">{getNextEvent().summary || "Kein Titel"}</h2>
+                  <div className="flex items-center gap-4 text-muted-foreground">
+                    <div className="flex items-center gap-2 bg-background/50 px-3 py-1 rounded-full">
+                      <Clock className="h-4 w-4 text-primary" />
+                      <span className="font-mono font-medium text-foreground">
+                        {new Date(getNextEvent().start.dateTime || getNextEvent().start.date).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                    {timeRemaining && (
+                      <span className="text-sm font-medium text-primary animate-pulse">
+                        in {timeRemaining}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Events List View */}
+          {events.length > 0 ? (
+            <div className="h-full flex flex-col animate-in fade-in slide-in-from-right-8 duration-500">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-2xl font-bold text-foreground flex items-center gap-2">
+                  <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                    <Calendar className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  Deine Termine
+                </h3>
+                <Button variant="ghost" size="sm" onClick={() => setEvents([])}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto space-y-4 pr-2">
+                {events.map((event, index) => {
+                  const start = event.start.dateTime ? new Date(event.start.dateTime) : new Date(event.start.date);
+                  const end = event.end.dateTime ? new Date(event.end.dateTime) : new Date(event.end.date);
+                  const isAllDay = !event.start.dateTime;
+
+                  return (
+                    <div key={index} className="p-4 rounded-xl border border-border bg-card hover:shadow-md transition-all">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="font-semibold text-lg">{event.summary || "Kein Titel"}</h4>
+                          <div className="flex items-center gap-2 text-muted-foreground mt-1 text-sm">
+                            <Clock className="h-4 w-4" />
+                            <span>
+                              {start.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' })}
+                              {!isAllDay && ` • ${start.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} - ${end.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`}
+                              {isAllDay && " • Ganztägig"}
+                            </span>
+                          </div>
+                        </div>
+                        {event.htmlLink && (
+                          <a href={event.htmlLink} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline text-sm">
+                            Öffnen
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : isConfirmationPending ? (
             <div className="h-full flex flex-col animate-in fade-in slide-in-from-right-8 duration-500">
               {/* Header */}
               <div className="flex items-center justify-between mb-6">
@@ -444,6 +671,23 @@ const CalSpeakBuddy = () => {
           )}
         </div>
       </div>
+
+      <AlertDialog open={showConfirmationDialog} onOpenChange={setShowConfirmationDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Aktion bestätigen</AlertDialogTitle>
+            <AlertDialogDescription className="text-lg text-foreground">
+              {confirmationMessage}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction onClick={executeConfirmedCommand} className="bg-primary text-primary-foreground hover:bg-primary/90">
+              Bestätigen & Ausführen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

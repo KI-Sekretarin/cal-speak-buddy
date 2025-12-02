@@ -109,6 +109,14 @@ npm run dev
 4.  Go back to the main page.
 5.  Click the **Microphone** and say something like:
     > *"Erstelle ein Meeting morgen um 14 Uhr für Projektplanung"*
+    > *"Zeige meine Termine für heute"*
+    > *"Lösche das Meeting Projektplanung"*
 6.  Check the transcript and click **"Befehl ausführen"**.
+7.  **Confirm** the action in the dialog.
+
+## 4. UI Features
+The new dashboard includes:
+- **Next Meeting Widget**: Shows a countdown to your next event.
+- **Quick Actions**: Buttons for common tasks like listing today's events or deleting the next meeting.
 
 Enjoy your Local AI Assistant! 🚀

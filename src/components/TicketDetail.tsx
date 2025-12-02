@@ -128,10 +128,6 @@ export default function TicketDetail({ inquiryId, onBack }: { inquiryId: string;
                 <Clock className="h-4 w-4" />
                 Erstellt: {format(new Date(inquiry.created_at), 'dd.MM.yyyy HH:mm', { locale: de })}
               </span>
-              <span className="flex items-center gap-2">
-                <Tag className="h-4 w-4" />
-                Kategorie: {inquiry.category}
-              </span>
             </div>
 
             <Separator />
@@ -160,7 +156,12 @@ export default function TicketDetail({ inquiryId, onBack }: { inquiryId: string;
 
             <Separator />
 
-            <AIResponseInterface inquiryId={inquiry.id} onUpdate={loadInquiry} />
+            <AIResponseInterface
+              inquiryId={inquiry.id}
+              onUpdate={loadInquiry}
+              defaultResponse={inquiry.ai_response}
+              isClosed={inquiry.status === 'closed'}
+            />
           </CardContent>
         </Card>
       </div>

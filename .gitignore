@@ -42,3 +42,4 @@ n8n-export-*
 # Google Credentials
 credentials.json
 token.json
+supabase/.temp

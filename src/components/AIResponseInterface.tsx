@@ -4,7 +4,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Sparkles, Check, Send, Clock, Edit2, X } from 'lucide-react';
+import { Sparkles, Check, Send, Clock, Edit2, X, RefreshCw, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
@@ -18,7 +18,7 @@ interface AIResponse {
   created_at: string;
 }
 
-export default function AIResponseInterface({ inquiryId, onUpdate }: { inquiryId: string; onUpdate: () => void }) {
+export default function AIResponseInterface({ inquiryId, onUpdate, defaultResponse, isClosed }: { inquiryId: string; onUpdate: () => void; defaultResponse?: string | null; isClosed?: boolean }) {
   const { user } = useAuth();
   const [existingResponses, setExistingResponses] = useState<AIResponse[]>([]);
   const [suggestedResponse, setSuggestedResponse] = useState('');
@@ -30,6 +30,12 @@ export default function AIResponseInterface({ inquiryId, onUpdate }: { inquiryId
   useEffect(() => {
     loadExistingResponses();
   }, [inquiryId]);
+
+  useEffect(() => {
+    if (defaultResponse && !suggestedResponse && existingResponses.length === 0) {
+      setSuggestedResponse(defaultResponse);
+    }
+  }, [defaultResponse, existingResponses]);
 
   const loadExistingResponses = async () => {
     try {
@@ -164,15 +170,38 @@ export default function AIResponseInterface({ inquiryId, onUpdate }: { inquiryId
                     ) : (
                       <>
                         {editingId !== response.id && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => startEditing(response)}
-                            className="gap-2"
-                          >
-                            <Edit2 className="h-3 w-3" />
-                            Bearbeiten
-                          </Button>
+                          <>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => startEditing(response)}
+                              className="gap-2"
+                            >
+                              <Edit2 className="h-3 w-3" />
+                              Bearbeiten
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={async () => {
+                                try {
+                                  const { error } = await supabase
+                                    .from('ai_responses')
+                                    .delete()
+                                    .eq('id', response.id);
+
+                                  if (error) throw error;
+                                  toast.success('Antwort gelöscht');
+                                  loadExistingResponses();
+                                } catch (error) {
+                                  toast.error('Fehler beim Löschen');
+                                }
+                              }}
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </>
                         )}
                         <Button
                           size="sm"
@@ -187,7 +216,7 @@ export default function AIResponseInterface({ inquiryId, onUpdate }: { inquiryId
                     )}
                   </div>
                 </div>
-                
+
                 {editingId === response.id ? (
                   <div className="space-y-2">
                     <Textarea
@@ -221,7 +250,7 @@ export default function AIResponseInterface({ inquiryId, onUpdate }: { inquiryId
                     {response.suggested_response}
                   </p>
                 )}
-                
+
                 {response.sent_at && (
                   <p className="text-xs text-muted-foreground">
                     Versendet am {format(new Date(response.sent_at), 'dd.MM.yyyy HH:mm', { locale: de })}
@@ -233,29 +262,57 @@ export default function AIResponseInterface({ inquiryId, onUpdate }: { inquiryId
         </div>
       )}
 
-      <Card className="p-4 bg-muted/30 border-border/50">
-        <div className="space-y-2 mb-4">
-          <h4 className="text-sm font-medium">Neue Antwort erstellen:</h4>
-        </div>
-        <Textarea
-          value={suggestedResponse}
-          onChange={(e) => setSuggestedResponse(e.target.value)}
-          placeholder="Schreiben Sie hier Ihre Antwort..."
-          rows={8}
-          className="bg-background/50 resize-none"
-        />
-        
-        <div className="mt-4 flex gap-2 justify-end">
-          <Button
-            onClick={saveResponse}
-            disabled={isSaving || !suggestedResponse.trim()}
-            className="gap-2"
-          >
-            <Check className="h-4 w-4" />
-            {isSaving ? 'Speichere...' : 'Antwort speichern'}
-          </Button>
-        </div>
-      </Card>
+      {!isClosed && (
+        <Card className="p-4 bg-muted/30 border-border/50">
+          <div className="space-y-2 mb-4">
+            <h4 className="text-sm font-medium">Neue Antwort erstellen:</h4>
+          </div>
+          <Textarea
+            value={suggestedResponse}
+            onChange={(e) => setSuggestedResponse(e.target.value)}
+            placeholder="Schreiben Sie hier Ihre Antwort..."
+            rows={8}
+            className="bg-background/50 resize-none"
+          />
+
+          <div className="mt-4 flex gap-2 justify-end">
+            <Button
+              variant="outline"
+              onClick={async () => {
+                try {
+                  const { error } = await supabase
+                    .from('inquiries')
+                    .update({
+                      ai_category: null,
+                      ai_response: null,
+                      status: 'open'
+                    })
+                    .eq('inquiryId', inquiryId);
+
+                  if (error) throw error;
+
+                  toast.info('KI generiert neue Antwort...');
+                  onUpdate();
+                } catch (error) {
+                  toast.error('Fehler beim Zurücksetzen');
+                }
+              }}
+              className="gap-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Neu generieren
+            </Button>
+            <Button
+              onClick={saveResponse}
+              disabled={isSaving || !suggestedResponse.trim()}
+              className="gap-2"
+            >
+              <Check className="h-4 w-4" />
+              {isSaving ? 'Speichere...' : 'Antwort speichern'}
+            </Button>
+          </div>
+        </Card>
+      )}
     </div>
   );
 }

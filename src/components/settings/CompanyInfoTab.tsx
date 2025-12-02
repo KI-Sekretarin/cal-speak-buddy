@@ -1,9 +1,13 @@
+import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
 import { CompanyProfile } from '@/types/profile';
-import { Building2, Globe, MapPin, Phone } from 'lucide-react';
+import { Building2, Globe, MapPin, Phone, Upload, Image as ImageIcon, X } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface CompanyInfoTabProps {
   profile: CompanyProfile | null;
@@ -11,8 +15,110 @@ interface CompanyInfoTabProps {
 }
 
 export function CompanyInfoTab({ profile, onUpdate }: CompanyInfoTabProps) {
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Datei ist zu groß (Max. 2MB)');
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${profile?.id || 'unknown'}-${Date.now()}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('logos')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('logos')
+        .getPublicUrl(filePath);
+
+      onUpdate('logo_url', publicUrl);
+      toast.success('Logo erfolgreich hochgeladen');
+    } catch (error) {
+      console.error('Error uploading logo:', error);
+      toast.error('Fehler beim Hochladen des Logos');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const removeLogo = () => {
+    onUpdate('logo_url', null);
+  };
+
   return (
     <div className="space-y-6">
+      {/* Logo Upload */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <ImageIcon className="h-5 w-5" />
+            <CardTitle>Firmenlogo</CardTitle>
+          </div>
+          <CardDescription>
+            Laden Sie Ihr Firmenlogo hoch. Es wird in E-Mails angezeigt.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-6">
+            {profile?.logo_url ? (
+              <div className="relative group">
+                <div className="h-24 w-24 rounded-lg border border-border overflow-hidden bg-muted/30 flex items-center justify-center">
+                  <img
+                    src={profile.logo_url}
+                    alt="Firmenlogo"
+                    className="max-h-full max-w-full object-contain"
+                  />
+                </div>
+                <Button
+                  variant="destructive"
+                  size="icon"
+                  className="absolute -top-2 -right-2 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={removeLogo}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </div>
+            ) : (
+              <div className="h-24 w-24 rounded-lg border border-dashed border-border flex items-center justify-center bg-muted/10">
+                <ImageIcon className="h-8 w-8 text-muted-foreground/50" />
+              </div>
+            )}
+            <div className="space-y-2 flex-1">
+              <Label htmlFor="logo-upload" className="cursor-pointer">
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" disabled={isUploading} className="pointer-events-none">
+                    <Upload className="mr-2 h-4 w-4" />
+                    {isUploading ? 'Wird hochgeladen...' : 'Logo hochladen'}
+                  </Button>
+                  <span className="text-xs text-muted-foreground">
+                    Max. 2MB (PNG, JPG, WEBP)
+                  </span>
+                </div>
+              </Label>
+              <Input
+                id="logo-upload"
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                className="hidden"
+                onChange={handleLogoUpload}
+                disabled={isUploading}
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Basic Company Information */}
       <Card>
         <CardHeader>

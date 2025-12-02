@@ -9,13 +9,13 @@ const corsHeaders = {
 // Input validation function
 const validateInput = (body: any): string[] => {
   const errors: string[] = [];
-  
+
   if (!body.name || typeof body.name !== 'string' || body.name.trim().length === 0) {
     errors.push('Name ist erforderlich');
   } else if (body.name.length > 100) {
     errors.push('Name darf maximal 100 Zeichen lang sein');
   }
-  
+
   if (!body.email || typeof body.email !== 'string') {
     errors.push('E-Mail ist erforderlich');
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.email)) {
@@ -23,27 +23,27 @@ const validateInput = (body: any): string[] => {
   } else if (body.email.length > 255) {
     errors.push('E-Mail darf maximal 255 Zeichen lang sein');
   }
-  
+
   if (body.phone && (typeof body.phone !== 'string' || body.phone.length > 20)) {
     errors.push('Telefonnummer darf maximal 20 Zeichen lang sein');
   }
-  
+
   if (!body.subject || typeof body.subject !== 'string' || body.subject.trim().length === 0) {
     errors.push('Betreff ist erforderlich');
   } else if (body.subject.length > 200) {
     errors.push('Betreff darf maximal 200 Zeichen lang sein');
   }
-  
+
   if (!body.message || typeof body.message !== 'string' || body.message.trim().length === 0) {
     errors.push('Nachricht ist erforderlich');
   } else if (body.message.length > 5000) {
     errors.push('Nachricht darf maximal 5000 Zeichen lang sein');
   }
-  
+
   if (!body.user_id || typeof body.user_id !== 'string') {
     errors.push('User ID ist erforderlich');
   }
-  
+
   return errors;
 };
 
@@ -61,7 +61,7 @@ serve(async (req) => {
     const url = new URL(req.url);
     const pathParts = url.pathname.split('/');
     const lastSegment = pathParts[pathParts.length - 1];
-    
+
     // Check if last segment is a valid UUID
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     const id = uuidRegex.test(lastSegment) ? lastSegment : null;
@@ -98,20 +98,20 @@ serve(async (req) => {
     // POST new inquiry
     if (req.method === 'POST') {
       const body = await req.json();
-      
+
       // Validate input
       const validationErrors = validateInput(body);
       if (validationErrors.length > 0) {
         console.error("Validation errors:", validationErrors);
         return new Response(
           JSON.stringify({ error: validationErrors.join(', ') }),
-          { 
-            status: 400, 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           }
         );
       }
-      
+
       // Sanitize input by trimming and limiting length
       const sanitizedData = {
         name: body.name.trim().substring(0, 100),
@@ -122,7 +122,7 @@ serve(async (req) => {
         category: body.category || 'general',
         user_id: body.user_id,
       };
-      
+
       const { data, error } = await supabaseClient
         .from('inquiries')
         .insert(sanitizedData)
@@ -152,7 +152,7 @@ serve(async (req) => {
     // PUT update inquiry
     if (req.method === 'PUT' && id) {
       const body = await req.json();
-      
+
       const { data, error } = await supabaseClient
         .from('inquiries')
         .update({

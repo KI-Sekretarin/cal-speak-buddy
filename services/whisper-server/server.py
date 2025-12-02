@@ -70,9 +70,12 @@ async def transcribe_file(file: UploadFile = File(...)):
         if os.path.exists(temp_filename):
             os.remove(temp_filename)
 
+from typing import Optional
+
 class CommandRequest(BaseModel):
     text: str
-    auth_token: str = None # Optional user token
+    auth_token: Optional[str] = None # Optional user token
+    dry_run: bool = False # Optional confirmation flag
 
 @app.post("/process-command")
 async def process_command(request: CommandRequest):
@@ -83,7 +86,7 @@ async def process_command(request: CommandRequest):
     if not agent:
         return {"status": "error", "message": "Calendar Agent not initialized. Check server logs."}
     
-    result = agent.process(request.text, request.auth_token)
+    result = agent.process(request.text, request.auth_token, request.dry_run)
     return result
 
 if __name__ == "__main__":

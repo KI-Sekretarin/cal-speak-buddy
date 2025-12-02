@@ -7,17 +7,16 @@ import FeatureModal from '@/components/FeatureModal';
 import ThemeToggle from '@/components/ThemeToggle';
 
 // Premium images from Pexels and Unsplash - carefully curated for each feature
-// NOTE: Replace the file at `public/uploaded-hero.jpg` with the image you uploaded.
-const heroImage = 'https://images.unsplash.com/photo-1677442d019cecf3da6888533cda230f904896700?auto=format&fit=crop&w=2000&q=80';
-const uploadedHero = '/uploaded-hero.jpg';
+// Premium images - generated and curated
+const heroImage = '/images/hero.png';
 
 const featureImages = {
-  voice: 'https://www.homeandsmart.de/var/site/storage/images/_aliases/fixed_col_8_sm_2x/7/6/3/5/425367-1-ger-DE/sprachsteuerung-smart-home-cover.jpg',
-  tickets: 'https://www.givainc.com/images/ticket_management.png',
-  chat: 'https://framerusercontent.com/images/g0YTRh7uRHpbWQgSZz62bO050.png?width=1378&height=880',
-  suggestions: 'https://image.brigitte.de/11674268/t/jC/v2/w1440/r1.5/-/e-mail-knigge-bild.jpg',
-  automation: 'https://www.omnitracker.com/assets/images/041_News/omninet-omnitracker-bpmn-rpa-automation-740x470__FitMaxWzEyODAsMTAyNF0.jpg',
-  analytics: 'https://www.weka.io/wp-content/uploads/files/2021/09/modern-analytic.jpg'
+  voice: '/images/voice.png',
+  tickets: '/images/tickets.png',
+  chat: 'https://images.unsplash.com/photo-1531746790731-6c087fecd65a?auto=format&fit=crop&w=800&q=80',
+  suggestions: 'https://images.unsplash.com/photo-1620712943543-bcc4688e7485?auto=format&fit=crop&w=800&q=80',
+  automation: '/images/automation.png',
+  analytics: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&q=80'
 };
 
 export default function Index() {
@@ -160,61 +159,86 @@ export default function Index() {
         <ThemeToggle />
       </div>
 
-      {/* Hero Section - Überarbeitet, angepasst an bestehendes Farbschema */}
-      <section className="relative overflow-hidden min-h-[80vh] flex items-center bg-gradient-to-b from-primary/10 to-background">
-        <div className="container mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 items-center py-20">
-            <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-700">
-              <div className="inline-flex items-center gap-3 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-semibold">
-                <Sparkles className="h-5 w-5 text-primary" />
-                Produktiv durch KI
+      {/* Hero Section - Redesigned */}
+      <section className="relative overflow-hidden min-h-[90vh] flex items-center bg-background">
+        {/* Background Elements */}
+        <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
+          <div className="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] bg-primary/20 rounded-full blur-[120px] animate-pulse" />
+          <div className="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] bg-accent/10 rounded-full blur-[100px]" />
+        </div>
+
+        <div className="container mx-auto relative z-10">
+          <div className="grid lg:grid-cols-2 gap-16 items-center py-20">
+            <div className="space-y-8 animate-in fade-in slide-in-from-left-4 duration-1000">
+              <div className="inline-flex items-center gap-3 bg-primary/10 border border-primary/20 text-primary px-4 py-2 rounded-full text-sm font-semibold backdrop-blur-sm">
+                <Sparkles className="h-4 w-4" />
+                <span>Die Zukunft der Produktivität</span>
               </div>
 
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-foreground leading-tight">
-                Deine digitale{' '}
-                <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">KI-Sekretärin</span>
+              <h1 className="text-5xl md:text-6xl lg:text-7xl font-black text-foreground leading-[1.1] tracking-tight">
+                Deine digitale <br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-purple-500 to-accent animate-gradient-x">
+                  KI-Sekretärin
+                </span>
               </h1>
 
-              <p className="text-lg text-muted-foreground max-w-2xl leading-relaxed">
-                Automatisiere E‑Mails, Termine und Support-Anfragen — per Sprache oder Klick. Schnell einrichten, sofort produktiver.
+              <p className="text-xl text-muted-foreground max-w-xl leading-relaxed">
+                Verabschiede dich von Routineaufgaben. Automatisiere E‑Mails, Termine und Support-Anfragen mit modernster KI-Technologie.
               </p>
 
-              <div className="flex flex-wrap gap-4">
+              <div className="flex flex-wrap gap-4 pt-4">
                 {user ? (
-                  <Button onClick={() => navigate('/admin')} size="lg" className="bg-primary text-primary-foreground">
+                  <Button onClick={() => navigate('/admin')} size="lg" className="h-14 px-8 text-lg rounded-full bg-primary hover:bg-primary/90 shadow-lg shadow-primary/25 transition-all hover:scale-105">
                     Zum Dashboard
                   </Button>
                 ) : (
                   <>
-                    <Button onClick={() => navigate('/register')} size="lg" className="bg-primary text-primary-foreground">
+                    <Button onClick={() => navigate('/register')} size="lg" className="h-14 px-8 text-lg rounded-full bg-primary hover:bg-primary/90 shadow-lg shadow-primary/25 transition-all hover:scale-105">
                       Kostenlos starten
                     </Button>
-                    <Button onClick={() => navigate('/contact')} size="lg" variant="outline" className="border-primary/20 text-primary">
+                    <Button onClick={() => navigate('/contact')} size="lg" variant="outline" className="h-14 px-8 text-lg rounded-full border-2 hover:bg-secondary transition-all">
                       Demo buchen
                     </Button>
                   </>
                 )}
               </div>
 
-              <div className="flex gap-4 mt-6">
-                <div className="p-4 rounded-lg bg-card border border-primary/10">
-                  <div className="text-2xl font-bold text-primary">60%</div>
-                  <div className="text-sm text-muted-foreground">Zeit gespart</div>
+              <div className="grid grid-cols-3 gap-6 pt-8 border-t border-border/50">
+                <div>
+                  <div className="text-3xl font-bold text-foreground">60%</div>
+                  <div className="text-sm text-muted-foreground font-medium">Zeit gespart</div>
                 </div>
-                <div className="p-4 rounded-lg bg-card border border-primary/10">
-                  <div className="text-2xl font-bold text-primary">24/7</div>
-                  <div className="text-sm text-muted-foreground">Automatisiert</div>
+                <div>
+                  <div className="text-3xl font-bold text-foreground">24/7</div>
+                  <div className="text-sm text-muted-foreground font-medium">Verfügbarkeit</div>
                 </div>
-                <div className="p-4 rounded-lg bg-card border border-primary/10">
-                  <div className="text-2xl font-bold text-primary">99.9%</div>
-                  <div className="text-sm text-muted-foreground">Zuverlässigkeit</div>
+                <div>
+                  <div className="text-3xl font-bold text-foreground">100%</div>
+                  <div className="text-sm text-muted-foreground font-medium">Datenschutz</div>
                 </div>
               </div>
             </div>
 
-            <div className="flex justify-center">
-              <div className="w-full max-w-md rounded-2xl overflow-hidden shadow-xl border border-primary/10 bg-gradient-to-br from-white/5 to-transparent p-4">
-                <img loading="lazy" src={uploadedHero} alt="Produktbild" className="w-full h-72 object-cover rounded-lg" />
+            <div className="relative animate-in fade-in slide-in-from-right-8 duration-1000 delay-200">
+              <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-white/10 bg-black/5 backdrop-blur-sm group">
+                <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                <img
+                  src={heroImage}
+                  alt="KI Sekretärin Dashboard"
+                  className="w-full h-auto object-cover transform transition-transform duration-700 group-hover:scale-105"
+                />
+              </div>
+              {/* Floating Elements */}
+              <div className="absolute -bottom-6 -left-6 bg-card/80 backdrop-blur-md p-4 rounded-2xl shadow-xl border border-white/20 animate-bounce-slow hidden md:block">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-green-500/20 flex items-center justify-center">
+                    <CheckCircle className="h-6 w-6 text-green-500" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-bold">Termin bestätigt</div>
+                    <div className="text-xs text-muted-foreground">Vor 2 Minuten</div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -222,78 +246,66 @@ export default function Index() {
       </section>
 
       {/* Features Section - Expanded Content */}
-      <section className="py-32 bg-gradient-to-b from-background via-primary/5 to-background">
-        <div className="container mx-auto">
-          <div className="text-center space-y-4 mb-16 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <h2 className="text-5xl md:text-6xl font-black">Umfassende Feature Suite</h2>
+      <section className="py-32 bg-secondary/5 relative">
+        <div className="container mx-auto relative z-10">
+          <div className="text-center space-y-4 mb-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <h2 className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tight">Umfassende Feature Suite</h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
               Alles was du brauchst, um deinen Workflow zu revolutionieren. Von Sprachsteuerung bis zu KI-gestütztem Reporting.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {features.map((f, i) => (
               <article
                 key={i}
-                className="group rounded-3xl overflow-hidden border border-primary/10 bg-card hover:border-primary/30 hover:shadow-2xl transition-all transform hover:-translate-y-2 duration-500"
+                className="group relative rounded-3xl overflow-hidden border border-white/10 bg-card/50 backdrop-blur-sm hover:bg-card/80 hover:shadow-2xl hover:shadow-primary/10 transition-all duration-500 flex flex-col"
               >
                 {/* Feature Image */}
-                <div className="relative h-64 overflow-hidden">
+                <div className="relative h-56 overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent z-10" />
                   <img
                     src={f.image}
                     alt={f.title}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                     loading="lazy"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-                  <div className="absolute left-6 bottom-6 flex items-center gap-3">
-                    <div className="h-14 w-14 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center">
-                      <f.icon className="h-7 w-7 text-white" />
-                    </div>
-                    <div>
-                      <h3 className="text-white text-xl font-bold">{f.title}</h3>
+                  <div className="absolute top-4 right-4 z-20">
+                    <div className="h-12 w-12 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-lg">
+                      <f.icon className="h-6 w-6 text-white" />
                     </div>
                   </div>
                 </div>
 
                 {/* Feature Content */}
-                <div className="p-8 space-y-6">
-                  <p className="text-muted-foreground">{f.description}</p>
+                <div className="p-8 flex flex-col flex-grow">
+                  <h3 className="text-2xl font-bold mb-3 group-hover:text-primary transition-colors">{f.title}</h3>
+                  <p className="text-muted-foreground mb-6 flex-grow leading-relaxed">{f.description}</p>
 
                   {/* Stats Row */}
                   {f.stats && (
-                    <div className="grid grid-cols-2 gap-4 py-4 border-y border-primary/10">
+                    <div className="grid grid-cols-2 gap-4 py-4 border-y border-primary/10 mb-6 bg-primary/5 rounded-xl px-4">
                       {f.stats.map((stat, idx) => (
                         <div key={idx} className="text-center">
-                          <div className="text-2xl font-bold text-primary">{stat.value}</div>
-                          <div className="text-sm text-muted-foreground">{stat.label}</div>
+                          <div className="text-lg font-bold text-primary">{stat.value}</div>
+                          <div className="text-xs text-muted-foreground uppercase tracking-wider">{stat.label}</div>
                         </div>
                       ))}
                     </div>
                   )}
 
-                  {/* Bullets */}
-                  <div className="space-y-2">
-                    {f.bullets.map((bullet, idx) => (
-                      <div key={idx} className="flex items-start gap-3">
-                        <CheckCircle className="h-5 w-5 text-accent flex-shrink-0 mt-0.5" />
-                        <span className="text-sm text-muted-foreground">{bullet}</span>
-                      </div>
-                    ))}
-                  </div>
-
                   {/* CTA Buttons */}
-                  <div className="flex gap-3 pt-4">
+                  <div className="flex gap-3 mt-auto">
                     <button
-                      className="flex-1 px-4 py-3 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-all text-sm"
+                      className="flex-1 px-4 py-3 rounded-xl bg-primary/10 text-primary font-semibold hover:bg-primary hover:text-primary-foreground transition-all text-sm border border-primary/20"
                       onClick={() => {
                         setSelectedFeature(f);
                         setModalOpen(true);
                       }}
                     >
-                      Details anschauen
+                      Details
                     </button>
-                    <Button size="sm" variant="outline" onClick={() => navigate('/contact')} className="flex-1">
+                    <Button size="sm" variant="ghost" onClick={() => navigate('/contact')} className="flex-1 hover:bg-secondary">
                       Kontakt
                     </Button>
                   </div>
