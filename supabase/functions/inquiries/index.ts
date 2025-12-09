@@ -131,17 +131,8 @@ serve(async (req) => {
 
       if (error) throw error;
 
-      // Trigger n8n webhook for AI categorization and response generation
-      try {
-        await fetch('https://kisekretaerin.app.n8n.cloud/webhook-test/new-inquiry', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data),
-        });
-      } catch (webhookError) {
-        console.error('n8n webhook error:', webhookError);
-        // Continue even if webhook fails
-      }
+      // n8n webhook removed as requested
+
 
       return new Response(JSON.stringify(data), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

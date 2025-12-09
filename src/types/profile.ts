@@ -40,14 +40,14 @@ export interface CompanyProfile {
   id: string;
   full_name?: string;
   company_name?: string;
-  
+
   // Company Details
   industry?: string;
   company_size?: CompanySize;
   founded_year?: number;
   tax_id?: string;
   registration_number?: string;
-  
+
   // Contact Information
   phone?: string;
   mobile?: string;
@@ -55,7 +55,7 @@ export interface CompanyProfile {
   email?: string;
   website?: string;
   social_media?: SocialMedia;
-  
+
   // Address
   street?: string;
   street_number?: string;
@@ -63,53 +63,59 @@ export interface CompanyProfile {
   city?: string;
   state?: string;
   country?: string;
-  
+
   // Business Hours
   business_hours?: BusinessHours;
-  
+
   // AI Context
   company_description?: string;
   services_offered?: string[];
   target_audience?: string;
   company_values?: string[];
   unique_selling_points?: string[];
-  
+
   // Communication Preferences
   preferred_tone?: PreferredTone;
   preferred_language?: string;
   response_template_intro?: string;
   response_template_signature?: string;
-  
+
   // FAQ & Categories
   common_faqs?: FAQ[];
   inquiry_categories?: string[];
-  
+
   // AI Instructions
   ai_instructions?: string;
   auto_response_enabled?: boolean;
   auto_categorization_enabled?: boolean;
-  
+
   // Additional Features
   certifications?: string[];
   languages_supported?: string[];
   payment_methods?: string[];
   delivery_areas?: string[];
   important_notes?: string;
-  
+
   // Branding
   logo_url?: string;
   brand_colors?: BrandColors;
-  
+
   // Meta
   profile_completed?: boolean;
   last_profile_update?: string;
   created_at?: string;
   updated_at?: string;
-  
+
   // Contact Form
   contact_form_slug?: string;
   contact_form_title?: string;
   contact_form_description?: string;
+
+  // Chat Settings
+  chat_enabled?: boolean;
+  chat_welcome_message?: string;
+  chat_primary_color?: string;
+  chat_suggested_questions?: string[];
 }
 
 export interface AICompanyContext {

@@ -38,7 +38,7 @@ interface DashboardLayoutProps {
 const navigation = [
   { name: 'Sprachsteuerung', href: '/voice-commands', icon: Mic, active: true },
   { name: 'Anfragen & Tickets', href: '/admin', icon: Mail, active: true },
-  { name: 'Chat', href: '/chat', icon: MessageSquare, active: false },
+  { name: 'Chat', href: '/chat', icon: MessageSquare, active: true },
   { name: 'Meeting-Webseiten', href: '/meetings', icon: Globe, active: false },
   { name: 'Kiosk-Modul', href: '/kiosk', icon: Wifi, active: false },
   { name: 'Einstellungen', href: '/settings', icon: Settings, active: true },
