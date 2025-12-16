@@ -43,3 +43,4 @@ n8n-export-*
 credentials.json
 token.json
 supabase/.temp
+vite.config.ts.timestamp-*

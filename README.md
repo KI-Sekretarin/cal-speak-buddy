@@ -2,18 +2,12 @@
 
 **🚀 [CLICK HERE FOR SETUP GUIDE (SETUP_GUIDE.md)](./SETUP_GUIDE.md)**
 
-This project uses **Local AI (Ollama + Whisper)** to control your Google Calendar via voice.
-
----
-
-# 📅 CalSpeakBuddy - Local AI Calendar Assistant
-
-**🚀 [CLICK HERE FOR SETUP GUIDE (SETUP_GUIDE.md)](./SETUP_GUIDE.md)**
-
-This project uses **Local AI (Ollama + Whisper)** to control your Google Calendar via voice.
+This project uses **Local AI (Ollama + Whisper)** to control your Google Calendar via voice and providing an AI Business Chat.
 
 ## Features
 *   **Voice Commands**: Create, List, Update, and Delete events.
+*   **AI Business Chat**: Chat with a customizable AI assistant trained on your company data.
+*   **Company Profile**: Manage business details and product catalog for the AI.
 *   **Local Privacy**: Speech processing (Whisper) and reasoning (Llama 3.2) run 100% locally.
 *   **Google Integration**: Connects securely to your Google Calendar.
 *   **Modern UI**: Built with React, Vite, and Shadcn UI.
