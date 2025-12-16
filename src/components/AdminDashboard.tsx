@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
+import EmailSyncButton from '@/components/EmailSyncButton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Eye, RefreshCw, Sparkles, Archive, Inbox } from 'lucide-react';
+import { Eye, RefreshCw, Sparkles, Archive, Inbox, Mail } from 'lucide-react';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
@@ -34,6 +35,7 @@ interface Inquiry {
     is_approved: boolean;
   }[];
   ai_category?: string | null;
+  source?: string;
 }
 
 export default function AdminDashboard({ onSelectInquiry }: { onSelectInquiry: (id: string) => void }) {
@@ -119,6 +121,7 @@ export default function AdminDashboard({ onSelectInquiry }: { onSelectInquiry: (
             <TableHead>E-Mail</TableHead>
             <TableHead>Betreff</TableHead>
             <TableHead>Kategorie</TableHead>
+            <TableHead>Quelle</TableHead>
             <TableHead>Status</TableHead>
             <TableHead className="text-right">Aktionen</TableHead>
           </TableRow>
@@ -146,6 +149,16 @@ export default function AdminDashboard({ onSelectInquiry }: { onSelectInquiry: (
                     </Badge>
                   ) : (
                     <span className="text-muted-foreground text-sm">-</span>
+                  )}
+                </TableCell>
+                <TableCell>
+                  {inquiry.source === 'email' ? (
+                    <Badge variant="secondary" className="gap-1">
+                      <Mail className="h-3 w-3" />
+                      Mail
+                    </Badge>
+                  ) : (
+                    <span className="text-muted-foreground text-sm">Formular</span>
                   )}
                 </TableCell>
                 <TableCell>
@@ -206,6 +219,7 @@ export default function AdminDashboard({ onSelectInquiry }: { onSelectInquiry: (
                 ))}
               </SelectContent>
             </Select>
+            <EmailSyncButton />
             <Button onClick={loadInquiries} disabled={isLoading} variant="outline" className="gap-2">
               <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
               Aktualisieren

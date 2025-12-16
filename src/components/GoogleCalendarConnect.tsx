@@ -33,17 +33,17 @@ const GoogleCalendarConnect: React.FC<GoogleCalendarConnectProps> = ({ onTokenCh
 
             toast({
                 title: "Verbunden!",
-                description: "Dein Google Kalender ist jetzt verknüpft.",
+                description: "Dein Google Konto (Kalender & Mail) ist verknüpft.",
             });
         },
         onError: () => {
             toast({
                 title: "Fehler",
-                description: "Verbindung zum Google Kalender fehlgeschlagen.",
+                description: "Verbindung zu Google fehlgeschlagen.",
                 variant: "destructive",
             });
         },
-        scope: 'https://www.googleapis.com/auth/calendar', // Request calendar access
+        scope: 'https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/gmail.modify',
     });
 
     const logout = () => {
@@ -52,7 +52,7 @@ const GoogleCalendarConnect: React.FC<GoogleCalendarConnectProps> = ({ onTokenCh
         onTokenChange(null);
         toast({
             title: "Getrennt",
-            description: "Verbindung zum Google Kalender wurde getrennt.",
+            description: "Verbindung zu Google wurde getrennt.",
         });
     };
 
@@ -61,8 +61,8 @@ const GoogleCalendarConnect: React.FC<GoogleCalendarConnectProps> = ({ onTokenCh
             <div className="flex items-center gap-2 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
                 <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
                 <div className="flex-1">
-                    <p className="text-sm font-medium text-green-900 dark:text-green-100">Kalender verbunden</p>
-                    <p className="text-xs text-green-700 dark:text-green-300">Bereit für Sprachbefehle</p>
+                    <p className="text-sm font-medium text-green-900 dark:text-green-100">Google Konto verbunden</p>
+                    <p className="text-xs text-green-700 dark:text-green-300">Kalender & E-Mails bereit</p>
                 </div>
                 <Button
                     variant="ghost"
@@ -83,8 +83,8 @@ const GoogleCalendarConnect: React.FC<GoogleCalendarConnectProps> = ({ onTokenCh
                     <Calendar className="h-5 w-5 text-blue-600 dark:text-blue-300" />
                 </div>
                 <div>
-                    <p className="text-sm font-medium text-blue-900 dark:text-blue-100">Google Kalender verbinden</p>
-                    <p className="text-xs text-blue-700 dark:text-blue-300">Notwendig für Termin-Erstellung</p>
+                    <p className="text-sm font-medium text-blue-900 dark:text-blue-100">Google Konto verbinden</p>
+                    <p className="text-xs text-blue-700 dark:text-blue-300">Für Kalender & E-Mail-Import</p>
                 </div>
             </div>
             <Button

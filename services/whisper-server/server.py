@@ -89,6 +89,25 @@ async def process_command(request: CommandRequest):
     result = agent.process(request.text, request.auth_token, request.dry_run)
     return result
 
+# --- Mail Agent Integration ---
+from mail_agent import MailAgent
+mail_agent = MailAgent()
+
+class EmailScanRequest(BaseModel):
+    auth_token: str
+    user_id: str
+
+@app.post("/scan-emails")
+async def scan_emails(request: EmailScanRequest):
+    """
+    Scans unread emails from the connected Gmail account 
+    and converts them to Supabase inquiries.
+    """
+    if not mail_agent:
+        return {"status": "error", "message": "Mail Agent not initialized."}
+    
+    return mail_agent.scan_and_process(request.auth_token, request.user_id)
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=9000)

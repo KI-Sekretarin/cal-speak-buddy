@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { useState } from 'react';
 import { Plus, X } from 'lucide-react';
 import GoogleCalendarConnect from '@/components/GoogleCalendarConnect';
+import EmailSyncButton from '@/components/EmailSyncButton';
 
 interface AdditionalFeaturesTabProps {
   profile: CompanyProfile | null;
@@ -74,8 +75,9 @@ export function AdditionalFeaturesTab({ profile, onUpdate }: AdditionalFeaturesT
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="max-w-md">
+          <div className="max-w-md space-y-4">
             <GoogleCalendarConnect onTokenChange={() => { }} />
+            <EmailSyncButton />
           </div>
         </CardContent>
       </Card>
