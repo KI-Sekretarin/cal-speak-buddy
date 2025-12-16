@@ -85,7 +85,7 @@ export default function Settings() {
           </Button>
         </div>
 
-        <Tabs defaultValue="company" className="space-y-6">
+        <Tabs defaultValue={new URLSearchParams(window.location.search).get('tab') || "company"} className="space-y-6">
           <TabsList className="grid w-full grid-cols-6 h-auto">
             <TabsTrigger value="company">Firmendaten</TabsTrigger>
             <TabsTrigger value="products">Sortiment</TabsTrigger>
