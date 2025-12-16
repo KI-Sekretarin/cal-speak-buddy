@@ -69,7 +69,7 @@ export default function Login() {
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
-            
+
             <div className="space-y-2">
               <Label htmlFor="email">E-Mail-Adresse</Label>
               <Input
@@ -82,7 +82,7 @@ export default function Login() {
                 disabled={loading}
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="password">Passwort</Label>
               <Input
@@ -100,12 +100,12 @@ export default function Login() {
               <Link to="/register" className="text-primary hover:underline">
                 Noch kein Account?
               </Link>
-              <Link to="#" className="text-muted-foreground hover:text-foreground">
+              <Link to="/forgot-password" className="text-muted-foreground hover:text-foreground">
                 Passwort vergessen?
               </Link>
             </div>
           </CardContent>
-          
+
           <CardFooter>
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? 'Wird angemeldet...' : 'Anmelden'}

@@ -1,3 +1,12 @@
+-- Create inquiry_queue table if it doesn't exist
+CREATE TABLE IF NOT EXISTS public.inquiry_queue (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  inquiry_id UUID REFERENCES public.inquiries(id) ON DELETE CASCADE,
+  payload JSONB,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  processed_at TIMESTAMP WITH TIME ZONE
+);
+
 -- Fix function search paths using CREATE OR REPLACE
 CREATE OR REPLACE FUNCTION public.enqueue_inquiry()
 RETURNS trigger

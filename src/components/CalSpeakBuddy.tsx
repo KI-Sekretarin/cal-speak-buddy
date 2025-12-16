@@ -93,8 +93,8 @@ const CalSpeakBuddy = () => {
     return futureEvents[0] || null;
   };
 
-  // n8n Webhook URL - kann später in Settings konfigurierbar gemacht werden
-  const WEBHOOK_URL = 'https://n8n-service-jm5f.onrender.com/webhook-test/audio-to-transcribe';
+  // n8n Webhook URL removed
+  // const WEBHOOK_URL = '...';
 
   const convertToWav = async (webmBlob: Blob): Promise<Blob> => {
     const audioContext = new AudioContext();
@@ -485,7 +485,7 @@ const CalSpeakBuddy = () => {
               </div>
             )}
             <p className="text-muted-foreground text-sm text-center font-mono">
-              🎤 Lokale Whisper-Transkription (Port 9000) → 🔗 n8n Webhook Integration
+              🎤 Lokale Whisper-Transkription (Port 9000)
             </p>
 
             {/* Quick Actions */}

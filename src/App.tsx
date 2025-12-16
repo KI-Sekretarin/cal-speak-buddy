@@ -9,11 +9,14 @@ import { GoogleOAuthProvider } from '@react-oauth/google';
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import ForgotPassword from "./pages/ForgotPassword";
+import UpdatePassword from "./pages/UpdatePassword";
 import Contact from "./pages/Contact";
 import PublicContactForm from "./pages/PublicContactForm";
 import Admin from "./pages/Admin";
 import VoiceCommands from "./pages/VoiceCommands";
 import Chat from "./pages/Chat";
+import PublicChat from "./pages/PublicChat";
 import Meetings from "./pages/Meetings";
 import Kiosk from "./pages/Kiosk";
 import Settings from "./pages/Settings";
@@ -37,8 +40,11 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/update-password" element={<UpdatePassword />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/contact/:slug" element={<PublicContactForm />} />
+              <Route path="/c/:slug" element={<PublicChat />} />
               <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
               <Route path="/voice-commands" element={<ProtectedRoute><VoiceCommands /></ProtectedRoute>} />
               <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />

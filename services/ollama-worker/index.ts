@@ -80,7 +80,7 @@ async function fallbackClaimOne() {
 
 async function fetchProfile(userId: string) {
     const { data, error } = await supabase
-        .from('profiles')
+        .from('ai_company_context')
         .select('*')
         .eq('id', userId)
         .single();
@@ -128,6 +128,11 @@ async function analyzeInquiry(subject: string, message: string, profile: any) {
     const services = Array.isArray(profile?.services_offered) ? profile.services_offered.join(', ') : '';
     const certifications = Array.isArray(profile?.certifications) ? profile.certifications.join(', ') : '';
 
+    // NEW: Products & Pricing
+    const productsList = Array.isArray(profile?.products_and_services)
+        ? profile.products_and_services.map((p: any) => `- ${p.name}: ${p.price} ${p.currency} (${p.description || ''})`).join('\n')
+        : '';
+
     // 6. Knowledge Base
     const faqs = Array.isArray(profile?.common_faqs) ? JSON.stringify(profile.common_faqs) : '';
     const importantNotes = profile?.important_notes || '';
@@ -148,7 +153,10 @@ Your goal is to categorize the inquiry and write the BODY of a professional emai
 
 === CONTEXT (The ONLY truth) ===
 Description: ${description}
-Services: ${services}
+Services Offered: ${services}
+Products & Prices:
+${productsList}
+
 Values: ${values}
 Business Hours: ${businessHours}
 Contact: ${contactInfo}
@@ -230,6 +238,178 @@ Return valid JSON ONLY:
     }
 }
 
+async function generateChatResponse(message: string, profile: any, history: string) {
+    // 1. Basic Company Info
+    const companyName = profile?.company_name || 'our company';
+    const description = profile?.company_description || '';
+    const tone = profile?.preferred_tone || 'professional';
+    const language = profile?.preferred_language || 'de';
+
+    // 2. Contact & Location
+    const contactInfo = [
+        profile?.email ? `Email: ${profile.email}` : '',
+        profile?.phone ? `Phone: ${profile.phone}` : '',
+        profile?.website ? `Website: ${profile.website}` : '',
+        profile?.street ? `Address: ${profile.street} ${profile.street_number || ''}, ${profile.postal_code || ''} ${profile.city || ''}` : ''
+    ].filter(Boolean).join('\n');
+
+    // 3. Knowledge Base
+    const services = Array.isArray(profile?.services_offered) ? profile.services_offered.join(', ') : '';
+    // NEW: Products & Pricing
+    const productsList = Array.isArray(profile?.products_and_services)
+        ? profile.products_and_services.map((p: any) => `- ${p.name}: ${p.price} ${p.currency}`).join('\n')
+        : '';
+
+    const businessHours = profile?.business_hours ? JSON.stringify(profile.business_hours) : '';
+    const faqs = Array.isArray(profile?.common_faqs) ? JSON.stringify(profile.common_faqs) : '';
+    const importantNotes = profile?.important_notes || '';
+    const instructions = profile?.ai_instructions || '';
+
+    const prompt = `
+You are a helpful AI assistant for "${companyName}".
+Your goal is to answer the customer's question based on the company context.
+
+=== CONTEXT ===
+Description: ${description}
+Services: ${services}
+Products & Prices:
+${productsList}
+Business Hours: ${businessHours}
+Contact: ${contactInfo}
+FAQs: ${faqs}
+Notes: ${importantNotes}
+Instructions: ${instructions}
+
+=== HISTORY ===
+${history}
+
+=== CURRENT MESSAGE ===
+User: ${message}
+
+=== INSTRUCTIONS ===
+- Answer in ${language === 'de' ? 'GERMAN' : 'ENGLISH'}.
+- Tone: ${tone}.
+- Use the context provided.
+- If you don't know, say you will check internally or ask for contact details.
+- Keep it concise (chat style).
+- Do NOT include "Assistant:" prefix.
+- **ESCALATION**: Set "escalate": true if:
+  - You cannot answer the question.
+  - The user asks to speak to a human.
+  - The user is angry or complaining.
+  - The user requests an appointment or booking.
+  - You are saying "I will check internally".
+
+Return valid JSON ONLY:
+{
+  "response": "Your text response here",
+  "escalate": true/false
+}
+`;
+
+    try {
+        const response = await fetch(`${OLLAMA_URL}/api/generate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                model: OLLAMA_MODEL,
+                prompt: prompt,
+                stream: false,
+                format: "json"
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`Ollama API error: ${response.statusText}`);
+        }
+
+        const data = await response.json() as any;
+        return JSON.parse(data.response);
+    } catch (error) {
+        console.error('Ollama chat generation failed:', error);
+        return null;
+    }
+}
+
+
+
+async function ensureChatInquiry(sessionId: string, userId: string, firstMessage: string) {
+    // Check if inquiry exists
+    const { data: existing } = await supabase
+        .from('inquiries')
+        .select('id')
+        .eq('chat_session_id', sessionId)
+        .single();
+
+    if (existing) return;
+
+    // Create new inquiry
+    console.log(`Creating new inquiry for chat session ${sessionId}`);
+    await supabase.from('inquiries').insert({
+        user_id: userId,
+        subject: 'Neue Chat-Anfrage',
+        message: firstMessage,
+        source: 'chat',
+        chat_session_id: sessionId,
+        status: 'open'
+    });
+}
+
+async function processChatMessages() {
+    // 1. Find unprocessed user messages
+    const { data: messages, error } = await supabase
+        .from('chat_messages')
+        .select('*, chat_sessions(user_id)')
+        .eq('sender', 'user')
+        .eq('is_processed', false)
+        .limit(5);
+
+    if (error || !messages || messages.length === 0) return;
+
+    for (const msg of messages) {
+        console.log(`Processing chat message ${msg.id}: ${msg.content}`);
+
+        // Mark as processed immediately
+        await supabase.from('chat_messages').update({ is_processed: true }).eq('id', msg.id);
+
+        const userId = msg.chat_sessions?.user_id;
+        if (!userId) continue;
+
+        // Ensure ticket exists
+        // await ensureChatInquiry(msg.session_id, userId, msg.content); // Removed: Conditional now
+
+        const profile = await fetchProfile(userId);
+
+        // Get conversation history (last 5 messages)
+        const { data: history } = await supabase
+            .from('chat_messages')
+            .select('sender, content')
+            .eq('session_id', msg.session_id)
+            .lt('created_at', msg.created_at)
+            .order('created_at', { ascending: false })
+            .limit(5);
+
+        const historyText = history ? history.reverse().map((h: any) => `${h.sender === 'user' ? 'User' : 'Assistant'}: ${h.content}`).join('\n') : '';
+
+        // Generate response
+        const result = await generateChatResponse(msg.content, profile, historyText);
+
+        if (result && result.response) {
+            await supabase.from('chat_messages').insert({
+                session_id: msg.session_id,
+                sender: 'bot',
+                content: result.response
+            });
+
+            // Check for escalation
+            if (result.escalate) {
+                console.log(`Escalating chat session ${msg.session_id} to ticket.`);
+                await ensureChatInquiry(msg.session_id, userId, msg.content);
+            }
+        }
+    }
+}
+
 async function processInquiry(inquiry: any) {
     console.log(`Processing inquiry ${inquiry.id}: ${inquiry.subject}`);
 
@@ -287,7 +467,12 @@ async function main() {
                 for (const inquiry of inquiries) {
                     await processInquiry(inquiry);
                 }
-            } else {
+            }
+
+            // Process chat messages
+            await processChatMessages();
+
+            if ((!inquiries || inquiries.length === 0)) {
                 // No work found, wait a bit
                 // console.log('No new inquiries found. Waiting...');
                 await new Promise(resolve => setTimeout(resolve, 5000));
