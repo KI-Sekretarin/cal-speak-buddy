@@ -38,9 +38,7 @@ graph TD
         end
     end
 
-    subgraph External_Automation ["Automation"]
-        n8n[n8n Workflow Automation]
-    end
+
 
     %% Data Flow Connections
     Mic -->|Audio Stream| UI
@@ -52,7 +50,6 @@ graph TD
     UI -->|Read/Write Data| DB
     UI -->|Auth Request| Auth
     UI -->|Direct API Call| GCal
-    UI -.->|Webhook| n8n
 
     Worker -->|Polls for Tasks| DB
     Worker -->|Update Result| DB
