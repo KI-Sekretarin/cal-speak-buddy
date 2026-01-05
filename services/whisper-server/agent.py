@@ -17,7 +17,7 @@ class CalendarAgent:
             base_url="http://localhost:11434/v1",
             api_key="ollama" 
         )
-        self.model_name = "llama3.2" 
+        self.model_name = "qwen2.5:14b" 
         
         self.creds = None
         self.service = None
@@ -68,16 +68,26 @@ class CalendarAgent:
         current_time = datetime.datetime.now().astimezone().isoformat()
         
         prompt = f"""
-        You are a smart calendar assistant. 
+        You are a smart calendar assistant for a German user.
         Current time: {current_time}
         
         User Input: "{text}"
         
         Your task:
-        1. Identify the INTENT: 'create_event', 'delete_event', 'update_event', 'list_events', or 'unknown'.
-        2. Extract event details: summary, start_time (ISO8601), end_time (ISO8601), description, location.
-        3. If no duration is specified, assume 1 hour.
-        4. Return ONLY valid JSON. No markdown.
+        1. Correct transcription errors based on context.
+        2. Identify the INTENT: 'create_event', 'delete_event', 'update_event', 'list_events', or 'unknown'.
+        3. Extract event details: summary, start_time (ISO8601), end_time (ISO8601), description, location.
+        4. **Handling "Delete All"**:
+           - If user says "delete all", "clear schedule", "alles löschen", set "delete_all": true.
+           - Extract correct time range ("today" -> timeMin=00:00, timeMax=23:59).
+           - Do NOT put "all events" as summary. Leave summary empty/null if it's a bulk delete.
+        5. Return ONLY valid JSON. No markdown.
+        
+        Examples:
+        - "Lege einen Termin mit Mark an" -> intent: create_event, summary: "Treffen mit Mark"
+        - "Zeige meine Termine" -> intent: list_events
+        - "Lösche alle Termine heute" -> intent: delete_event, delete_all: true, timeMin: "2025-12-31T00:00:00", timeMax: "2025-12-31T23:59:59"
+        - "Lösche den Termin Morgen" -> intent: delete_event, delete_all: false
         
         Example JSON structure for create_event:
         {{
@@ -85,16 +95,7 @@ class CalendarAgent:
             "event": {{
                 "summary": "Meeting with Tom",
                 "start": {{ "dateTime": "2025-11-26T14:00:00+01:00", "timeZone": "Europe/Vienna" }},
-                "end": {{ "dateTime": "2025-11-26T15:00:00+01:00", "timeZone": "Europe/Vienna" }},
-                "description": "Discuss project status"
-            }}
-        }}
-
-        Example JSON structure for list_events:
-        {{
-            "intent": "list_events",
-            "event": {{
-                "timeMin": "{current_time}" 
+                "end": {{ "dateTime": "2025-11-26T15:00:00+01:00", "timeZone": "Europe/Vienna" }}
             }}
         }}
 
@@ -103,7 +104,9 @@ class CalendarAgent:
             "intent": "delete_event",
             "event": {{
                 "summary": "Meeting with Tom",
-                "timeMin": "{current_time}"
+                "delete_all": false,
+                "timeMin": "{current_time}",
+                "timeMax": "2025-12-31T23:59:59+01:00"
             }}
         }}
         """
@@ -238,6 +241,26 @@ class CalendarAgent:
                         "data": event_data
                     }
                 elif intent == "delete_event":
+                    if event_data.get('delete_all'):
+                         # Batch delete dry run
+                         time_min = event_data.get('timeMin')
+                         time_max = event_data.get('timeMax')
+                         if not time_min: time_min = datetime.datetime.now().astimezone().isoformat()
+                         
+                         events_result = self.service.events().list(
+                             calendarId='primary', timeMin=time_min, timeMax=time_max, singleEvents=True
+                         ).execute()
+                         events = events_result.get('items', [])
+                         
+                         if not events:
+                             return {"status": "error", "message": "Ich habe keine Termine in diesem Zeitraum gefunden."}
+                             
+                         return {
+                             "status": "confirmation_required",
+                             "message": f"ACHTUNG: Ich werde ALLE {len(events)} Termine zwischen {time_min} und {time_max} löschen. Wirklich ausführen?",
+                             "data": event_data
+                         }
+
                     target_event = self._find_event(event_data.get('summary'), event_data.get('timeMin'))
                     if target_event:
                         return {
@@ -271,6 +294,27 @@ class CalendarAgent:
                 }
             
             elif intent == "delete_event":
+                if event_data.get('delete_all'):
+                     # Batch delete execution
+                     time_min = event_data.get('timeMin')
+                     time_max = event_data.get('timeMax')
+                     if not time_min: time_min = datetime.datetime.now().astimezone().isoformat()
+
+                     events_result = service.events().list(
+                         calendarId='primary', timeMin=time_min, timeMax=time_max, singleEvents=True
+                     ).execute()
+                     events = events_result.get('items', [])
+                     
+                     count = 0
+                     for e in events:
+                         try:
+                             service.events().delete(calendarId='primary', eventId=e['id']).execute()
+                             count += 1
+                         except Exception as del_err:
+                             print(f"Error deleting event {e['id']}: {del_err}")
+                             
+                     return {"status": "success", "message": f"Es wurden {count} Termine gelöscht."}
+
                 target_event = self._find_event(event_data.get('summary'), event_data.get('timeMin'))
                 if target_event:
                     service.events().delete(calendarId='primary', eventId=target_event['id']).execute()

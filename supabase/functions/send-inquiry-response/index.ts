@@ -159,14 +159,9 @@ const handler = async (req: Request): Promise<Response> => {
           </div>
 
           <div class="content">
-            <p>Hallo ${escapeHtml(inquiry.name)},</p>
-            <p>vielen Dank für Ihre Anfrage.</p>
-
             <div class="response-box">
               ${escapeHtml(response.suggested_response).replace(/\n/g, '<br>')}
             </div>
-
-            <p>Mit freundlichen Grüßen,<br>${escapeHtml(companyName)}</p>
           </div>
 
           <div class="footer">

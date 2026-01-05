@@ -20,6 +20,7 @@ export function AdditionalFeaturesTab({ profile, onUpdate }: AdditionalFeaturesT
   const [newLanguage, setNewLanguage] = useState('');
   const [newPaymentMethod, setNewPaymentMethod] = useState('');
   const [newDeliveryArea, setNewDeliveryArea] = useState('');
+  const [newService, setNewService] = useState('');
 
   const daysOfWeek = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
   const dayNames: Record<string, string> = {
@@ -137,6 +138,43 @@ export function AdditionalFeaturesTab({ profile, onUpdate }: AdditionalFeaturesT
               </div>
             );
           })}
+        </CardContent>
+      </Card>
+
+      {/* Services Offered */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Award className="h-5 w-5" />
+            <CardTitle>Angebotene Dienstleistungen</CardTitle>
+          </div>
+          <CardDescription>
+            Welche Dienstleistungen bieten Sie generell an?
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex gap-2">
+            <Input
+              value={newService}
+              onChange={(e) => setNewService(e.target.value)}
+              placeholder="z.B. Beratung, Installation, Wartung..."
+              onKeyPress={(e) => e.key === 'Enter' && addItem('services_offered', newService, setNewService)}
+            />
+            <Button onClick={() => addItem('services_offered', newService, setNewService)} size="icon">
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {profile?.services_offered?.map((service, index) => (
+              <Badge key={index} variant="secondary" className="gap-1">
+                {service}
+                <X
+                  className="h-3 w-3 cursor-pointer"
+                  onClick={() => removeItem('services_offered', index)}
+                />
+              </Badge>
+            ))}
+          </div>
         </CardContent>
       </Card>
 
@@ -288,57 +326,7 @@ export function AdditionalFeaturesTab({ profile, onUpdate }: AdditionalFeaturesT
         </CardContent>
       </Card>
 
-      {/* Logo & Branding */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Logo & Branding</CardTitle>
-          <CardDescription>
-            Visuelle Identität Ihres Unternehmens
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="logo_url">Logo URL</Label>
-            <Input
-              id="logo_url"
-              type="url"
-              value={profile?.logo_url || ''}
-              onChange={(e) => onUpdate('logo_url', e.target.value)}
-              placeholder="https://example.com/logo.png"
-            />
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="color_primary">Primärfarbe</Label>
-              <Input
-                id="color_primary"
-                type="color"
-                value={profile?.brand_colors?.primary || '#007bff'}
-                onChange={(e) => onUpdate('brand_colors', { ...profile?.brand_colors, primary: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="color_secondary">Sekundärfarbe</Label>
-              <Input
-                id="color_secondary"
-                type="color"
-                value={profile?.brand_colors?.secondary || '#6c757d'}
-                onChange={(e) => onUpdate('brand_colors', { ...profile?.brand_colors, secondary: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="color_accent">Akzentfarbe</Label>
-              <Input
-                id="color_accent"
-                type="color"
-                value={profile?.brand_colors?.accent || '#28a745'}
-                onChange={(e) => onUpdate('brand_colors', { ...profile?.brand_colors, accent: e.target.value })}
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

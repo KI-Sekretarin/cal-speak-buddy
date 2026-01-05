@@ -176,9 +176,9 @@ export default function Index() {
               </div>
 
               <h1 className="text-5xl md:text-6xl lg:text-7xl font-black text-foreground leading-[1.1] tracking-tight">
-                Deine digitale <br />
+                Dein digitaler <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-purple-500 to-accent animate-gradient-x">
-                  KI-Sekretärin
+                  Call-Speak-Buddy
                 </span>
               </h1>
 
@@ -224,7 +224,7 @@ export default function Index() {
                 <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
                 <img
                   src={heroImage}
-                  alt="KI Sekretärin Dashboard"
+                  alt="Call-Speak-Buddy Dashboard"
                   className="w-full h-auto object-cover transform transition-transform duration-700 group-hover:scale-105"
                 />
               </div>
@@ -634,7 +634,7 @@ export default function Index() {
                 Bereit, deine Produktivität zu revolutionieren?
               </h2>
               <p className="text-xl text-muted-foreground">
-                Tausende von Teams nutzen bereits die KI-Sekretärin, um Zeit zu sparen und effizienter zu arbeiten. Starten Sie kostenlos.
+                Tausende von Teams nutzen bereits Call-Speak-Buddy, um Zeit zu sparen und effizienter zu arbeiten. Starten Sie kostenlos.
               </p>
             </div>
 

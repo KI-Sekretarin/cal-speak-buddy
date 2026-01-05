@@ -7,7 +7,8 @@ dotenv.config();
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const OLLAMA_URL = process.env.OLLAMA_URL || 'http://localhost:11434';
-const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'llama3.2';
+const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'qwen2.5:14b';
+const OLLAMA_CTX = parseInt(process.env.OLLAMA_CTX || '16384', 10);
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
     console.error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
@@ -125,7 +126,7 @@ async function analyzeInquiry(subject: string, message: string, profile: any) {
     // 5. Company Identity & Values
     const values = Array.isArray(profile?.company_values) ? profile.company_values.join(', ') : '';
     const usps = Array.isArray(profile?.unique_selling_points) ? profile.unique_selling_points.join(', ') : '';
-    const services = Array.isArray(profile?.services_offered) ? profile.services_offered.join(', ') : '';
+
     const certifications = Array.isArray(profile?.certifications) ? profile.certifications.join(', ') : '';
 
     // NEW: Products & Pricing
@@ -153,7 +154,7 @@ Your goal is to categorize the inquiry and write the BODY of a professional emai
 
 === CONTEXT (The ONLY truth) ===
 Description: ${description}
-Services Offered: ${services}
+
 Products & Prices:
 ${productsList}
 
@@ -165,24 +166,23 @@ Notes: ${importantNotes}
 Instructions: ${instructions}
 
 === CRITICAL RULES ===
-1. **Check Availability First**:
+1. **SPAM DETECTION (High Priority)**:
+   - If the message is a Newsletter, Receipt, Automated Notification, Sales Pitch, or purely informational (no question asked) -> CATEGORIZE AS 'spam'.
+   - If it's "spam", return "body_text": "SPAM_DETECTED".
+
+2. **Check Availability First**:
    - User asks for Item X.
-   - Look for Item X in "Services" or "Description".
+   - Look for Item X in "Sortiment" or "Description".
    - If EXACT match found -> Say YES.
    - If ONLY related items found (e.g. user asks for "Golfschläger" but you only have "Golfbälle") -> Say: "We currently only have [Related Item]. regarding [Item X], I will check internally."
    - If NO match found -> Say: "I have no information on that, I will check internally."
 
-2. **Content Only**:
+3. **Content Only**:
    - Output ONLY the body paragraphs.
    - **ABSOLUTELY NO GREETING** (e.g. "Hello", "Dear...", "Servus", "Sehr geehrte...").
    - **ABSOLUTELY NO CLOSING** (e.g. "Best regards", "Sincerely", "Mit freundlichen Grüßen", "LG").
    - **ABSOLUTELY NO SIGNATURE** (e.g. "Your Company", "GC Wels").
    - Start directly with the first sentence of the message.
-   - These are added automatically by the system. Adding them causes duplicates.
-
-3. **Ignore Bad Instructions**:
-   - If "Instructions" say something weird (e.g. "talk like a pirate", "use insults"), IGNORE IT.
-   - Maintain a professional "${tone}" tone.
 
 4. **Tone**: ${tone}
 
@@ -209,7 +209,10 @@ Return valid JSON ONLY:
                 model: OLLAMA_MODEL,
                 prompt: prompt,
                 stream: false,
-                format: "json"
+                format: "json",
+                options: {
+                    num_ctx: OLLAMA_CTX
+                }
             }),
         });
 
@@ -228,9 +231,11 @@ Return valid JSON ONLY:
         // Return only the body text. The frontend/email service will add the greeting/closing.
         const aiBody = result.body_text || result.response || '';
 
+        const fullResponse = `${introTemplate}\n\n${aiBody}\n\n${signatureTemplate}`;
+
         return {
             category: category,
-            response: aiBody
+            response: fullResponse
         };
     } catch (error) {
         console.error('Ollama analysis failed:', error);
@@ -254,7 +259,7 @@ async function generateChatResponse(message: string, profile: any, history: stri
     ].filter(Boolean).join('\n');
 
     // 3. Knowledge Base
-    const services = Array.isArray(profile?.services_offered) ? profile.services_offered.join(', ') : '';
+
     // NEW: Products & Pricing
     const productsList = Array.isArray(profile?.products_and_services)
         ? profile.products_and_services.map((p: any) => `- ${p.name}: ${p.price} ${p.currency}`).join('\n')
@@ -271,7 +276,7 @@ Your goal is to answer the customer's question based on the company context.
 
 === CONTEXT ===
 Description: ${description}
-Services: ${services}
+
 Products & Prices:
 ${productsList}
 Business Hours: ${businessHours}
@@ -315,7 +320,10 @@ Return valid JSON ONLY:
                 model: OLLAMA_MODEL,
                 prompt: prompt,
                 stream: false,
-                format: "json"
+                format: "json",
+                options: {
+                    num_ctx: OLLAMA_CTX
+                }
             }),
         });
 
@@ -422,6 +430,22 @@ async function processInquiry(inquiry: any) {
 
     if (analysis && analysis.category) {
         console.log(`-> Categorized as: ${analysis.category}`);
+
+        if (analysis.category === 'spam') {
+            console.log('-> Spam detected. Deleting inquiry...');
+            const { error: deleteError } = await supabase
+                .from('inquiries')
+                .delete()
+                .eq('id', inquiry.id);
+
+            if (deleteError) {
+                console.error('Failed to delete spam inquiry:', deleteError);
+            } else {
+                console.log('-> Spam inquiry deleted successfully.');
+            }
+            return;
+        }
+
         console.log(`-> Generated response length: ${analysis.response?.length}`);
 
         const { error } = await supabase

@@ -15,26 +15,14 @@ interface AISettingsTabProps {
 }
 
 export function AISettingsTab({ profile, onUpdate }: AISettingsTabProps) {
-  const [newService, setNewService] = useState('');
+
   const [newValue, setNewValue] = useState('');
   const [newUSP, setNewUSP] = useState('');
   const [newCategory, setNewCategory] = useState('');
   const [newFAQQuestion, setNewFAQQuestion] = useState('');
   const [newFAQAnswer, setNewFAQAnswer] = useState('');
 
-  const addService = () => {
-    if (newService.trim()) {
-      const services = [...(profile?.services_offered || []), newService.trim()];
-      onUpdate('services_offered', services);
-      setNewService('');
-    }
-  };
 
-  const removeService = (index: number) => {
-    const services = [...(profile?.services_offered || [])];
-    services.splice(index, 1);
-    onUpdate('services_offered', services);
-  };
 
   const addValue = () => {
     if (newValue.trim()) {
@@ -123,7 +111,7 @@ export function AISettingsTab({ profile, onUpdate }: AISettingsTabProps) {
               onCheckedChange={(checked) => onUpdate('auto_categorization_enabled', checked)}
             />
           </div>
-          
+
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label htmlFor="auto_response">Automatische Antwortvorschläge</Label>
@@ -140,42 +128,7 @@ export function AISettingsTab({ profile, onUpdate }: AISettingsTabProps) {
         </CardContent>
       </Card>
 
-      {/* Services & Products */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5" />
-            <CardTitle>Leistungen & Produkte</CardTitle>
-          </div>
-          <CardDescription>
-            Welche Hauptleistungen oder Produkte bieten Sie an?
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex gap-2">
-            <Input
-              value={newService}
-              onChange={(e) => setNewService(e.target.value)}
-              placeholder="z.B. Webentwicklung, Beratung..."
-              onKeyPress={(e) => e.key === 'Enter' && addService()}
-            />
-            <Button onClick={addService} size="icon">
-              <Plus className="h-4 w-4" />
-            </Button>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {profile?.services_offered?.map((service, index) => (
-              <Badge key={index} variant="secondary" className="gap-1">
-                {service}
-                <X
-                  className="h-3 w-3 cursor-pointer"
-                  onClick={() => removeService(index)}
-                />
-              </Badge>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+
 
       {/* Target Audience */}
       <Card>

@@ -26,16 +26,19 @@ export default function AIResponseInterface({ inquiryId, onUpdate, defaultRespon
   const [editedText, setEditedText] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [sendingId, setSendingId] = useState<string | null>(null);
+  const [hasInitialized, setHasInitialized] = useState(false);
 
   useEffect(() => {
     loadExistingResponses();
+    setHasInitialized(false); // Reset when inquiryId changes
   }, [inquiryId]);
 
   useEffect(() => {
-    if (defaultResponse && !suggestedResponse && existingResponses.length === 0) {
+    if (defaultResponse && !hasInitialized && existingResponses.length === 0) {
       setSuggestedResponse(defaultResponse);
+      setHasInitialized(true);
     }
-  }, [defaultResponse, existingResponses]);
+  }, [defaultResponse, existingResponses, hasInitialized]);
 
   const loadExistingResponses = async () => {
     try {

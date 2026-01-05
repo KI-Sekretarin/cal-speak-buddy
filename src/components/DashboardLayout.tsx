@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
 import { cn } from '@/lib/utils';
+import { WalkthroughOverlay } from './WalkthroughOverlay';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -42,7 +43,7 @@ const navigation = [
   { name: 'Meeting-Webseiten', href: '/meetings', icon: Globe, active: false },
   { name: 'Kiosk-Modul', href: '/kiosk', icon: Wifi, active: false },
   { name: 'Einstellungen', href: '/settings', icon: Settings, active: true },
-  { name: 'Hilfe', href: '/help', icon: HelpCircle, active: false },
+  { name: 'Hilfe', href: '/help', icon: HelpCircle, active: true },
 ];
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
@@ -68,9 +69,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           {/* Logo */}
           <Link to="/admin" className="flex items-center gap-2 font-semibold text-xl">
             <div className="h-8 w-8 rounded-lg bg-gradient-primary flex items-center justify-center">
-              <span className="text-white font-bold">KI</span>
+              <span className="text-white font-bold text-xs">CSB</span>
             </div>
-            <span className="hidden sm:inline">KI-Sekretärin</span>
+            <span className="hidden sm:inline">Call-Speak-Buddy</span>
           </Link>
 
           {/* Search Bar */}
@@ -196,6 +197,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           </div>
         </main>
       </div>
+      <WalkthroughOverlay />
     </div>
   );
 }

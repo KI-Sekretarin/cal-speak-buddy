@@ -2,12 +2,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { CompanyProfile } from '@/types/profile';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Building2, 
-  MapPin, 
-  Phone, 
-  Mail, 
-  Globe, 
+import {
+  Building2,
+  MapPin,
+  Phone,
+  Mail,
+  Globe,
   Clock,
   Sparkles,
   CheckCircle2,
@@ -21,7 +21,7 @@ interface ProfilePreviewTabProps {
 export function ProfilePreviewTab({ profile }: ProfilePreviewTabProps) {
   const calculateCompleteness = () => {
     if (!profile) return 0;
-    
+
     const fields = [
       profile.company_name,
       profile.industry,
@@ -32,11 +32,10 @@ export function ProfilePreviewTab({ profile }: ProfilePreviewTabProps) {
       profile.street,
       profile.city,
       profile.postal_code,
-      profile.services_offered?.length,
       profile.target_audience,
       profile.preferred_tone,
     ];
-    
+
     const filled = fields.filter(f => f).length;
     return Math.round((filled / fields.length) * 100);
   };
@@ -45,7 +44,7 @@ export function ProfilePreviewTab({ profile }: ProfilePreviewTabProps) {
 
   const formatBusinessHours = (hours: any) => {
     if (!hours) return null;
-    
+
     const dayNames: Record<string, string> = {
       monday: 'Mo',
       tuesday: 'Di',
@@ -55,7 +54,7 @@ export function ProfilePreviewTab({ profile }: ProfilePreviewTabProps) {
       saturday: 'Sa',
       sunday: 'So'
     };
-    
+
     return Object.entries(hours).map(([day, time]: [string, any]) => ({
       day: dayNames[day],
       ...time
@@ -68,7 +67,7 @@ export function ProfilePreviewTab({ profile }: ProfilePreviewTabProps) {
       <Alert variant={completeness >= 70 ? 'default' : 'destructive'}>
         <AlertCircle className="h-4 w-4" />
         <AlertDescription>
-          Ihr Profil ist zu {completeness}% vollständig. 
+          Ihr Profil ist zu {completeness}% vollständig.
           {completeness < 70 && ' Bitte vervollständigen Sie Ihr Profil für bessere KI-Antworten.'}
         </AlertDescription>
       </Alert>
@@ -88,7 +87,7 @@ export function ProfilePreviewTab({ profile }: ProfilePreviewTabProps) {
           {profile?.company_description && (
             <p className="text-sm text-muted-foreground">{profile.company_description}</p>
           )}
-          
+
           <div className="flex flex-wrap gap-2">
             {profile?.company_size && (
               <Badge variant="secondary">{profile.company_size} Mitarbeiter</Badge>
@@ -137,24 +136,7 @@ export function ProfilePreviewTab({ profile }: ProfilePreviewTabProps) {
         </CardContent>
       </Card>
 
-      {/* Services */}
-      {profile?.services_offered && profile.services_offered.length > 0 && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5" />
-              <CardTitle>Leistungen & Produkte</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-2">
-              {profile.services_offered.map((service, index) => (
-                <Badge key={index} variant="outline">{service}</Badge>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+
 
       {/* Business Hours */}
       {profile?.business_hours && Object.keys(profile.business_hours).length > 0 && (
@@ -271,7 +253,7 @@ export function ProfilePreviewTab({ profile }: ProfilePreviewTabProps) {
               </div>
             </div>
           )}
-          
+
           {profile?.payment_methods && profile.payment_methods.length > 0 && (
             <div>
               <p className="text-sm font-medium mb-2">Zahlungsmethoden</p>
@@ -282,7 +264,7 @@ export function ProfilePreviewTab({ profile }: ProfilePreviewTabProps) {
               </div>
             </div>
           )}
-          
+
           {profile?.certifications && profile.certifications.length > 0 && (
             <div>
               <p className="text-sm font-medium mb-2">Zertifizierungen</p>

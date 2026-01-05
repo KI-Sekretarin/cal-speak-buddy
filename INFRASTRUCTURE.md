@@ -1,102 +1,86 @@
-# Infrastructure Diagram
+# 🏗️ Infrastruktur & Tech Stack
 
-This diagram illustrates the infrastructure and data flow of the **Cal Speak Buddy** project.
+## Tech Stack
+
+### Frontend (Client)
+- **Framework**: React 18
+- **Build Tool**: Vite
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS + Shadcn/UI
+- **Animation**: Framer Motion
+- **Charts**: Recharts
+
+### Backend & Data
+- **Database**: Supabase (PostgreSQL)
+- **Auth**: Supabase Auth
+- **Realtime**: Supabase Realtime Channels
+- **Storage**: Supabase Storage
+
+### AI Services (Local)
+- **LLM Runner**: Ollama (Running Llama 3.2 model)
+- **Worker Service**: Node.js (`ollama-worker`) - Polls Supabase, calls Ollama.
+- **Voice Service**: Python (`whisper-server`) - Runs OpenAI Whisper model locally.
+
+### Infrastructure & DevOps
+- **Local Dev**: `start_all.sh` orchestrates services.
+- **Ports**:
+  - Frontend: `8080`
+  - Whisper API: `9000`
+  - Ollama API: `11434`
+  - Supabase Studio: `54323` (if local) / Cloud
+
+---
+
+## 🗺️ Infrastruktur-Diagramm
 
 ```mermaid
 graph TD
-    subgraph Client ["User Device (Browser)"]
-        UI[React Frontend]
-        Mic[Microphone]
+    subgraph Client ["💻 Client (Browser)"]
+        UI[React App (Port 8080)]
+        Voice[Voice Input]
     end
 
-    subgraph Local_Machine ["Local Machine (Dev Environment)"]
-        subgraph Backend_Speech ["Speech Service (Python)"]
-            FastAPI[FastAPI Server Port 9000]
-            Whisper[Faster-Whisper Model]
-        end
+    subgraph Backend ["☁️ Backend (Supabase)"]
+        DB[(PostgreSQL DB)]
+        Auth[Auth Service]
+        Realtime[Realtime Engine]
+    end
 
-        subgraph Backend_AI ["AI Worker (Node.js)"]
-            Worker[Ollama Worker]
-        end
-
-        subgraph AI_Engine ["AI Engine"]
-            Ollama[Ollama Service Port 11434]
+    subgraph LocalAI ["🤖 Local AI Station"]
+        Worker[Node.js Ollama Worker]
+        Ollama[Ollama API (Port 11434)]
+        Whisper[Whisper Server (Port 9000)]
+        
+        subgraph Models
             Llama[Llama 3.2 Model]
+            WModel[Whisper Base Model]
         end
     end
 
-    subgraph Cloud_Services ["Cloud Services"]
-        subgraph Supabase_Cloud ["Supabase"]
-            Auth[Authentication]
-            DB[(PostgreSQL DB)]
-            Storage[File Storage]
-            Realtime[Realtime API]
-        end
-
-        subgraph Google_Cloud ["Google Cloud"]
-            GCal[Google Calendar API]
-        end
-    end
-
-
-
-    %% Data Flow Connections
-    Mic -->|Audio Stream| UI
-    UI -->|Audio File Upload| FastAPI
-    FastAPI -->|Transcribe| Whisper
-    Whisper -->|Text Transcript| FastAPI
-    FastAPI -->|Transcript JSON| UI
-
-    UI -->|Read/Write Data| DB
-    UI -->|Auth Request| Auth
-    UI -->|Direct API Call| GCal
-
-    Worker -->|Polls for Tasks| DB
-    Worker -->|Update Result| DB
-    Worker -->|Generate Prompt| Ollama
-    Ollama -->|Inference| Llama
-    Llama -->|Response| Ollama
-    Ollama -->|JSON Response| Worker
-
-    %% Realtime updates
-    Realtime -.->|Notify Updates| UI
-    DB -.->|Trigger Event| Realtime
+    %% Flow Connections
+    UI -- "REST / Realtime" --> Backend
+    UI -- "Audio Stream" --> Whisper
+    Whisper -- "Transcribed Text" --> UI
+    
+    Worker -- "Polls Inquiries" --> Backend
+    Worker -- "Updates Status/Response" --> Backend
+    
+    Worker -- "Generate Prompt" --> Ollama
+    Ollama -- "Inference" --> Llama
+    Ollama -- "Completion JSON" --> Worker
 
     %% Styling
     classDef client fill:#e1f5fe,stroke:#01579b,stroke-width:2px;
-    classDef local fill:#f3e5f5,stroke:#4a148c,stroke-width:2px;
-    classDef cloud fill:#e0f2f1,stroke:#004d40,stroke-width:2px;
-    classDef db fill:#fff9c4,stroke:#fbc02d,stroke-width:2px;
-
-    class UI,Mic client;
-    class FastAPI,Whisper,Worker,Ollama,Llama local;
-    class Auth,Storage,Realtime,GCal cloud;
-    class DB db;
+    classDef backend fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px;
+    classDef ai fill:#fff3e0,stroke:#ff6f00,stroke-width:2px;
+    
+    class Client client;
+    class Backend backend;
+    class LocalAI ai;
 ```
 
-## Component Description
-
-### 1. Client (Frontend)
-- **React + Vite**: The main user interface running in the browser.
-- **Microphone**: Captures user voice commands.
-- **Direct Integrations**: Communicates directly with Supabase (for data) and Google Calendar (via OAuth).
-
-### 2. Speech Service (Python)
-- **FastAPI**: Exposes an API on port 9000.
-- **Faster-Whisper**: Runs locally to transcribe audio to text with high accuracy.
-- **Flow**: Receives audio from frontend -> Transcribes -> Returns text.
-
-### 3. AI Worker (Node.js)
-- **Ollama Worker**: A background service that polls the Supabase database for new inquiries or tasks.
-- **Logic**: It picks up tasks, sends prompts to the local Ollama instance, and saves the AI-generated response back to the database.
-
-### 4. AI Engine (Local)
-- **Ollama**: Runs the Llama 3.2 model locally on port 11434.
-- **Privacy**: All reasoning happens locally; no data is sent to external AI providers (like OpenAI).
-
-### 5. Cloud Services
-- **Supabase**: Acts as the backend-as-a-service.
-    - **PostgreSQL**: Stores user profiles, inquiries, and application state.
-    - **Auth**: Handles user login and session management.
-    - **Realtime**: Pushes updates to the frontend when the AI Worker completes a task.
-- **Google Calendar**: Accessed directly by the frontend using the user's OAuth token to manage events.
+## Datenfluss
+1. **Anfrage**: Benutzer sendet Anfrage (via Form/Chat) -> Supabase DB.
+2. **Kategorisierung**: `Ollama Worker` erkennt neue Zeile -> Holt Kontext -> Fragt `Ollama` -> Speichert Kategorie in DB.
+3. **Antwort**: `Ollama Worker` generiert Antworttext -> Speichert Entwurf in DB.
+4. **Anzeige**: Frontend empfängt Update via Realtime -> Zeigt Ergebnis an.

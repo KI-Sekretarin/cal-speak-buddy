@@ -12,24 +12,30 @@ from dotenv import load_dotenv
 class MailAgent:
     def __init__(self):
         # Load env explicitly
-        load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
+        env_path = os.path.join(os.path.dirname(__file__), '.env')
+        print(f"DEBUG: Loading env from {env_path}")
+        load_dotenv(env_path)
 
         # Initialize Local LLM (Ollama)
         self.client = OpenAI(
             base_url="http://localhost:11434/v1",
             api_key="ollama" 
         )
-        self.model_name = "llama3.2"
+        self.model_name = "qwen2.5:14b"
         
         # Initialize Supabase
         url = os.environ.get("SUPABASE_URL") or os.environ.get("VITE_SUPABASE_URL")
         key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+        
+        print(f"DEBUG: Supabase URL: {url}")
+        print(f"DEBUG: Supabase Key Exists: {bool(key)}")
         
         if not url or not key:
             print("⚠️ Supabase credentials missing/incomplete in .env")
             self.supabase = None
         else:
             self.supabase: Client = create_client(url, key)
+            print("✅ Supabase Client initialized in MailAgent")
 
     def scan_and_process(self, auth_token: str, user_id: str):
         """
@@ -45,10 +51,11 @@ class MailAgent:
             
             # 2. Fetch unread emails
             print("🔍 Scanning for unread emails...")
-            results = service.users().messages().list(userId='me', q='is:unread', maxResults=5).execute()
+            results = service.users().messages().list(userId='me', q='is:unread', maxResults=10).execute()
             messages = results.get('messages', [])
             
             processed_count = 0
+            skipped_count = 0
             
             if not messages:
                 return {"status": "success", "count": 0, "message": "No unread emails found."}
@@ -67,11 +74,26 @@ class MailAgent:
                 # Extract body
                 body = self._get_email_body(payload)
                 
-                # 3. Process with AI
-                print(f"🤖 Processing email: {subject}")
+                # 3. Pre-Filter (Heuristic)
+                if self._is_obviously_irrelevant(sender, subject, body):
+                    print(f"🛑 Blocked by heuristic filters: {subject}")
+                    # Mark as read to avoid rescanning
+                    service.users().messages().modify(userId='me', id=msg['id'], body={'removeLabelIds': ['UNREAD']}).execute()
+                    skipped_count += 1
+                    continue
+
+                # 4. Process with AI
+                print(f"🤖 Analyzing email relevance: {subject}")
                 ai_data = self._analyze_email(subject, body)
                 
-                # 4. Save to Supabase
+                if not ai_data.get("is_relevant", False):
+                    print(f"⏭️ Skipping irrelevant email (AI decision): {subject} - Reason: {ai_data.get('reason')}")
+                    # Still mark as read so we don't scan it again
+                    service.users().messages().modify(userId='me', id=msg['id'], body={'removeLabelIds': ['UNREAD']}).execute()
+                    skipped_count += 1
+                    continue
+
+                # 5. Save to Supabase
                 data = {
                     "user_id": user_id,
                     "name": sender_name or "Email User",
@@ -87,11 +109,11 @@ class MailAgent:
                 self.supabase.table("inquiries").insert(data).execute()
                 print("✅ Insert successful")
                 
-                # 5. Mark as read
+                # 6. Mark as read
                 service.users().messages().modify(userId='me', id=msg['id'], body={'removeLabelIds': ['UNREAD']}).execute()
                 processed_count += 1
                 
-            return {"status": "success", "count": processed_count}
+            return {"status": "success", "count": processed_count, "skipped": skipped_count}
 
         except Exception as e:
             print(f"❌ Mail Processing Error: {e}")
@@ -111,22 +133,49 @@ class MailAgent:
              body += base64.urlsafe_b64decode(payload['body']['data']).decode()
         return body
 
+    def _is_obviously_irrelevant(self, sender, subject, body):
+        """Fast heuristic filter to block obvious junk before AI."""
+        sender = sender.lower()
+        subject = subject.lower()
+        
+        # Blocklist patterns
+        blocked_senders = ['noreply', 'do-not-reply', 'newsletter', 'marketing', 'alert', 'notification', 'info@twitter', 'facebook', 'linkedin', 'instagram']
+        blocked_keywords = ['verify your email', 'security alert', 'login attempted', 'unsubscribe', 'privacy policy update', 'terms of service', 'receipt', 'invoice', 'payment successful', 'bestellung bestätigt']
+        
+        if any(s in sender for s in blocked_senders):
+            return True
+        if any(k in subject for k in blocked_keywords):
+            return True
+            
+        return False
+
     def _analyze_email(self, subject, body):
-        """Uses Ollama to extract category and summary."""
+        """Uses Ollama to extract category and relevance."""
         prompt = f"""
-        Analyze this email for a customer support ticket.
+        Strictly analyze this email for a business secretary inbox.
         
         Subject: {subject}
-        Body: {body}
+        Body (Excerpt): {body[:1500]}
         
-        Task:
-        1. Categorize into: 'general', 'technical', 'billing', 'feedback', 'urgent'.
-        2. Summarize the core issue in 1 sentence.
+        Your Job:
+        Filter out EVERYTHING that is not a direct human inquiry requiring a response.
+        
+        Mark "is_relevant": false IF:
+        - Newsletters, automated notifications, system alerts.
+        - Receipts, invoices, payment confirmations.
+        - Marketing, spam, cold sales.
+        - LinkedIn/Social Media notifications.
+        
+        Mark "is_relevant": true ONLY IF:
+        - Real person asking a question.
+        - Request for appointment/booking.
+        - Complaint or direct feedback.
         
         Return JSON ONLY:
         {{
-            "category": "category_name",
-            "summary": "..."
+            "is_relevant": true/false,
+            "category": "general" | "appointment" | "technical" | "billing" | "complaint",
+            "reason": "short explanation"
         }}
         """
         
@@ -139,4 +188,6 @@ class MailAgent:
             return json.loads(response.choices[0].message.content)
         except Exception as e:
             print(f"AI Error: {e}")
-            return {"category": "general", "summary": "AI extraction failed"}
+            # FALBACK: Deny by default on error to prevent spam flood
+            return {"is_relevant": False, "category": "spam", "reason": "AI extraction failed"}
+

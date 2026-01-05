@@ -28,6 +28,7 @@ const GoogleCalendarConnect: React.FC<GoogleCalendarConnectProps> = ({ onTokenCh
 
             // Store token
             localStorage.setItem('google_calendar_token', token);
+            window.dispatchEvent(new Event('google_token_updated'));
             setIsConnected(true);
             onTokenChange(token);
 

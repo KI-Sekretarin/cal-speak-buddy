@@ -1,122 +1,86 @@
-# 🤖 Local AI Calendar Assistant - Setup Guide
+# 🚀 Cal-Speak-Buddy Setup Guide
 
-This project uses a **Local AI Stack** to interpret voice commands and manage your Google Calendar.
-It consists of:
-1.  **Frontend**: React + Vite (UI & Audio Recording)
-2.  **Backend**: Python FastAPI (Whisper Speech-to-Text & Command Processing)
-3.  **AI**: Ollama (Llama 3.2 for reasoning) + Faster-Whisper (for transcription)
+This guide will help you set up the **Cal-Speak-Buddy** project from scratch.
 
----
+## 📋 Prerequisites
 
-## ✅ Prerequisites
+Before you begin, ensure you have the following installed:
 
-Before you start, ensure you have the following installed:
-
-1.  **Node.js & npm**: [Download here](https://nodejs.org/)
-2.  **Python 3.10+**: [Download here](https://www.python.org/)
-3.  **Ollama**: [Download here](https://ollama.com/)
-
----
+1.  **Node.js** (v18 or higher) & **npm**
+2.  **Python** (3.10 or higher)
+3.  **Ollama** (for local AI)
+    *   Download from [ollama.com](https://ollama.com)
+    *   Pull the required models:
+        ```bash
+        ollama pull llama3.2
+        ollama pull qwen2.5:14b
+        ```
+    *   *Note: Ensure Ollama is running in the background.*
+4.  **Supabase** (Optional/Remote)
+    *   The project is configured to use a remote Supabase instance. Ensure you have the `.env` file with the correct credentials.
 
 ## 🛠️ Installation
 
-### 1. Clone the Repository
-```bash
-git clone <YOUR_REPO_URL>
-cd cal-speak-buddy
-```
-
-### 2. Setup Local AI (Ollama)
-Install and run the Llama 3.2 model (required for command interpretation):
-```bash
-ollama pull llama3.2
-ollama run llama3.2
-# Keep this terminal window open or ensure Ollama is running in the background
-```
-
-### 3. Setup Backend (Python)
-The backend handles speech recognition and communicates with Ollama.
-
-```bash
-cd services/whisper-server
-
-# Create a virtual environment
-python3 -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Return to root
-cd ../..
-```
-
-### 4. Setup Frontend (React)
-```bash
-npm install
-```
-
----
-
-## ⚙️ Configuration (Google OAuth)
-
-To allow the app to access your Google Calendar, you need a Google Cloud Project.
-
-1.  Go to [Google Cloud Console](https://console.cloud.google.com/).
-2.  Create a new project.
-3.  Enable the **Google Calendar API**.
-4.  Go to **APIs & Services > Credentials**.
-5.  Create **OAuth Client ID**:
-    *   Application type: **Web application**
-    *   Name: `CalSpeakBuddy`
-    *   **Authorized JavaScript origins**: `http://localhost:8080` (or `http://localhost:5173` if Vite defaults to that)
-    *   **Authorized redirect URIs**: `http://localhost:8080`
-6.  Copy your **Client ID**.
-7.  Open `src/App.tsx` in your editor.
-8.  Paste your Client ID:
-    ```typescript
-    const GOOGLE_CLIENT_ID = "YOUR_CLIENT_ID.apps.googleusercontent.com";
+1.  **Clone the repository:**
+    ```bash
+    git clone <repository_url>
+    cd cal-speak-buddy
     ```
 
----
+2.  **Install Frontend Dependencies:**
+    ```bash
+    npm install
+    ```
 
-## 🚀 Running the App
+3.  **Install Backend (Whisper) Dependencies:**
+    ```bash
+    cd services/whisper-server
+    # It is recommended to use a virtual environment
+    python -m venv venv
+    source venv/bin/activate  # On Windows: venv\Scripts\activate
+    pip install -r requirements.txt
+    cd ../..
+    ```
 
-You need to run both the Backend and Frontend.
+4.  **Install Ollama Worker Dependencies:**
+    ```bash
+    cd services/ollama-worker
+    npm install
+    cd ../..
+    ```
 
-### Terminal 1: Backend
+## 🚀 Starting the Application
+
+We have provided a unified startup script for convenience.
+
+### Mac/Linux
+Run the following command in the root directory:
+
 ```bash
-cd services/whisper-server
-./restart_agent.sh
-# Or manually:
-# source .venv/bin/activate
-# uvicorn server:app --host 0.0.0.0 --port 9000 --reload
-```
-*Wait until you see "Application startup complete". The first run downloads the Whisper model (~500MB - 1.5GB).*
-
-### Terminal 2: Frontend
-```bash
-npm run dev
+./start_all.sh
 ```
 
----
+This script will:
+1.  Kill any zombie processes on ports 8080 (Frontend) and 9000 (Whisper).
+2.  Clear Vite cache to ensure a clean build.
+3.  Start the **Whisper Server** (Speech-to-Text).
+4.  Start the **Ollama Worker** (AI Logic).
+5.  Start the **Frontend** (React App).
 
-## 🎤 Usage
+### Windows
+Please refer to `WHISPER_ANLEITUNG.md` for detailed PowerShell instructions, or manually start the services in separate terminals:
 
-1.  Open `http://localhost:8080` in your browser.
-2.  Go to **Settings (⚙️) > Weitere Features**.
-3.  Click **"Mit Google verbinden"** and log in.
-4.  Go back to the main page.
-5.  Click the **Microphone** and say something like:
-    > *"Erstelle ein Meeting morgen um 14 Uhr für Projektplanung"*
-    > *"Zeige meine Termine für heute"*
-    > *"Lösche das Meeting Projektplanung"*
-6.  Check the transcript and click **"Befehl ausführen"**.
-7.  **Confirm** the action in the dialog.
+1.  **Whisper Server:** `cd services/whisper-server && python server.py`
+2.  **Ollama Worker:** `cd services/ollama-worker && npm start`
+3.  **Frontend:** `npm run dev`
 
-## 4. UI Features
-The new dashboard includes:
-- **Next Meeting Widget**: Shows a countdown to your next event.
-- **Quick Actions**: Buttons for common tasks like listing today's events or deleting the next meeting.
+## 🌐 Accessing the App
 
-Enjoy your Local AI Assistant! 🚀
+*   **Frontend:** [http://localhost:8080](http://localhost:8080)
+*   **API/Swagger:** [http://localhost:9000/docs](http://localhost:9000/docs)
+
+## 🐛 Troubleshooting
+
+*   **"Port already in use"**: The `start_all.sh` script attempts to free ports. If it fails, manually find the process using `lsof -i :<port>` and kill it.
+*   **Ollama connection failed**: Ensure Ollama is running (`ollama serve`).
+*   **Missing Dependencies**: Re-run the installation steps above.

@@ -5,7 +5,18 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Eye, RefreshCw, Sparkles, Archive, Inbox, Mail } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Eye, RefreshCw, Sparkles, Archive, Inbox, Mail, FileText, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
@@ -73,6 +84,23 @@ export default function AdminDashboard({ onSelectInquiry }: { onSelectInquiry: (
       console.error(error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleDeleteInquiry = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('inquiries')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast.success('Anfrage gelöscht');
+      setInquiries(inquiries.filter(i => i.id !== id));
+    } catch (error) {
+      toast.error('Fehler beim Löschen der Anfrage');
+      console.error(error);
     }
   };
 
@@ -153,12 +181,20 @@ export default function AdminDashboard({ onSelectInquiry }: { onSelectInquiry: (
                 </TableCell>
                 <TableCell>
                   {inquiry.source === 'email' ? (
-                    <Badge variant="secondary" className="gap-1">
-                      <Mail className="h-3 w-3" />
-                      Mail
+                    <Badge variant="secondary" className="gap-1.5 bg-blue-500/10 text-blue-500 border-blue-500/20 hover:bg-blue-500/20 transition-colors">
+                      <Mail className="h-3.5 w-3.5" />
+                      E-Mail
+                    </Badge>
+                  ) : inquiry.source === 'chat' ? (
+                    <Badge variant="secondary" className="gap-1.5 bg-purple-500/10 text-purple-500 border-purple-500/20 hover:bg-purple-500/20 transition-colors">
+                      <Sparkles className="h-3.5 w-3.5" />
+                      Chat
                     </Badge>
                   ) : (
-                    <span className="text-muted-foreground text-sm">Formular</span>
+                    <Badge variant="secondary" className="gap-1.5 bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20 transition-colors">
+                      <FileText className="h-3.5 w-3.5" />
+                      Formular
+                    </Badge>
                   )}
                 </TableCell>
                 <TableCell>
@@ -173,15 +209,45 @@ export default function AdminDashboard({ onSelectInquiry }: { onSelectInquiry: (
                   </div>
                 </TableCell>
                 <TableCell className="text-right">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => onSelectInquiry(inquiry.id)}
-                    className="gap-2"
-                  >
-                    <Eye className="h-4 w-4" />
-                    Details
-                  </Button>
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => onSelectInquiry(inquiry.id)}
+                      className="gap-2"
+                    >
+                      <Eye className="h-4 w-4" />
+                      Details
+                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Sind Sie sicher?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Diese Aktion kann nicht rückgängig gemacht werden. Die Anfrage wird dauerhaft gelöscht.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => handleDeleteInquiry(inquiry.id)}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            Löschen
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
                 </TableCell>
               </TableRow>
             ))

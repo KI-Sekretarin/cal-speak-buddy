@@ -46,6 +46,38 @@ export function ChatSettingsTab({ profile, onUpdate }: ChatSettingsTabProps) {
 
     return (
         <div className="space-y-6">
+            {/* Public Chat Link */}
+            <Card className="bg-primary/5 border-primary/20">
+                <CardHeader>
+                    <div className="flex items-center gap-2">
+                        <MessageSquare className="h-5 w-5 text-primary" />
+                        <CardTitle>Ihr öffentlicher Chat-Link</CardTitle>
+                    </div>
+                    <CardDescription>
+                        Teilen Sie diesen Link mit Ihren Kunden, um Anfragen zu erhalten.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="flex items-center gap-2">
+                        <Input
+                            value={chatLink}
+                            readOnly
+                            className="font-mono text-sm bg-background"
+                        />
+                        <Button variant="outline" size="icon" onClick={copyToClipboard} title="Link kopieren">
+                            <Copy className="h-4 w-4" />
+                        </Button>
+                        <a href={chatLink} target="_blank" rel="noopener noreferrer">
+                            <Button variant="outline" size="icon" title="Öffnen">
+                                <ExternalLink className="h-4 w-4" />
+                            </Button>
+                        </a>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* Chat Appearance - MOVED TO PROFILE SETTINGS */}
+
             {/* ... (previous content) ... */}
             {/* Suggested Questions */}
             <Card>

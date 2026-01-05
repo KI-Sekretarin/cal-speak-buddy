@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useVoice } from '@/contexts/VoiceContext';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -28,7 +29,7 @@ const CalSpeakBuddy = () => {
   const [isProcessingCommand, setIsProcessingCommand] = useState(false);
   const [commandResponse, setCommandResponse] = useState<string | null>(null);
   const [googleToken, setGoogleToken] = useState<string | null>(null);
-  const [events, setEvents] = useState<any[]>([]);
+  const { events, setEvents, lastUpdated, setLastUpdated } = useVoice();
   const [showConfirmationDialog, setShowConfirmationDialog] = useState(false);
   const [confirmationMessage, setConfirmationMessage] = useState("");
   const [pendingCommandText, setPendingCommandText] = useState<string>("");
@@ -39,12 +40,25 @@ const CalSpeakBuddy = () => {
   // Load token from localStorage on mount
   // Load token from localStorage on mount
   useEffect(() => {
-    const token = localStorage.getItem('google_calendar_token');
-    if (token) {
-      setGoogleToken(token);
-      // Load events silently on mount
-      executeCommand("Zeige meine Termine für heute", false, true);
-    }
+    const loadToken = () => {
+      const token = localStorage.getItem('google_calendar_token');
+      if (token) {
+        setGoogleToken(token);
+      }
+    };
+
+    loadToken();
+
+    // Listen for token updates from settings page
+    window.addEventListener('google_token_updated', loadToken);
+
+    // Also listen for storage events (if changed in another tab)
+    window.addEventListener('storage', loadToken);
+
+    return () => {
+      window.removeEventListener('google_token_updated', loadToken);
+      window.removeEventListener('storage', loadToken);
+    };
   }, []);
 
   // Countdown Timer Logic
@@ -278,7 +292,7 @@ const CalSpeakBuddy = () => {
     }
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+    const timeoutId = setTimeout(() => controller.abort(), 120000); // 120s timeout (Ollama is heavy)
 
     try {
       console.log(`Sende Befehl an Backend (DryRun: ${dryRun}):`, text);
@@ -290,7 +304,7 @@ const CalSpeakBuddy = () => {
         },
         body: JSON.stringify({
           text: text,
-          auth_token: googleToken,
+          auth_token: googleToken || localStorage.getItem('google_calendar_token'),
           dry_run: dryRun
         }),
         signal: controller.signal
@@ -317,6 +331,7 @@ const CalSpeakBuddy = () => {
         // Handle List Events Intent
         if (data.intent === 'list_events' && Array.isArray(data.data)) {
           setEvents(data.data);
+          setLastUpdated(new Date());
           if (!silent) {
             toast({
               title: "Termine geladen",
@@ -491,7 +506,7 @@ const CalSpeakBuddy = () => {
             {/* Quick Actions */}
             <div className="w-full pt-6 border-t border-border">
               <h3 className="text-sm font-semibold text-muted-foreground mb-3 text-center uppercase tracking-wider">Quick Actions</h3>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="flex justify-center gap-4">
                 <Button variant="outline" className="h-auto py-3 flex flex-col gap-1 hover:bg-primary/5 hover:border-primary/30" onClick={() => executeCommand("Zeige meine Termine für heute", false)}>
                   <span className="text-xl">📅</span>
                   <span className="text-xs font-medium">Heute</span>
@@ -500,10 +515,7 @@ const CalSpeakBuddy = () => {
                   <span className="text-xl">⏭️</span>
                   <span className="text-xs font-medium">Morgen</span>
                 </Button>
-                <Button variant="outline" className="h-auto py-3 flex flex-col gap-1 hover:bg-destructive/5 hover:border-destructive/30 hover:text-destructive" onClick={() => executeCommand("Lösche den nächsten Termin", true)}>
-                  <span className="text-xl">❌</span>
-                  <span className="text-xs font-medium">Löschen</span>
-                </Button>
+
               </div>
             </div>
           </div>
