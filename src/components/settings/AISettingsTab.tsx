@@ -11,7 +11,7 @@ import { Switch } from '@/components/ui/switch';
 
 interface AISettingsTabProps {
   profile: CompanyProfile | null;
-  onUpdate: (field: string, value: any) => void;
+  onUpdate: (field: string, value: unknown) => void;
 }
 
 export function AISettingsTab({ profile, onUpdate }: AISettingsTabProps) {
@@ -270,12 +270,21 @@ export function AISettingsTab({ profile, onUpdate }: AISettingsTabProps) {
       {/* Custom Categories */}
       <Card>
         <CardHeader>
-          <CardTitle>Benutzerdefinierte Kategorien</CardTitle>
+          <CardTitle>Ticket-Kategorien & Mitarbeiter-Rollen</CardTitle>
           <CardDescription>
-            Kategorien für die automatische Einordnung von Anfragen
+            Definieren Sie Kategorien für die automatische Einordnung von Anfragen und die Zuweisung von Mitarbeiter-Rollen.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded-md text-sm flex items-start gap-3">
+            <div className="mt-0.5"><Sparkles className="h-4 w-4" /></div>
+            <div>
+              <strong>Wichtig:</strong> Diese Kategorien definieren auch die <strong>Rollen</strong>, die Sie Ihren Mitarbeitern zuweisen können.
+              <br />
+              Beispiel: Wenn Sie hier "IT-Support" hinzufügen, können Sie anschließend einen Mitarbeiter erstellen, der nur Tickets der Kategorie "IT-Support" sieht.
+            </div>
+          </div>
+
           <div className="flex gap-2">
             <Input
               value={newCategory}

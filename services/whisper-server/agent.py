@@ -227,9 +227,10 @@ class CalendarAgent:
                 return {
                     "status": "success", 
                     "message": f"[SIMULATION] Termin erstellt: {event_data.get('summary')}",
+                    "voice_message": f"Ich habe den Termin '{event_data.get('summary')}' simuliert erstellt.",
                     "data": event_data
                 }
-            return {"status": "error", "message": "Google Calendar not authenticated (Simulation Mode)."}
+            return {"status": "error", "message": "Google Calendar not authenticated (Simulation Mode).", "voice_message": "Ich bin nicht mit Google Kalender verbunden."}
 
         try:
             # DRY RUN CHECK
@@ -238,6 +239,7 @@ class CalendarAgent:
                     return {
                         "status": "confirmation_required", 
                         "message": f"Ich werde den Termin '{event_data.get('summary')}' erstellen. Einverstanden?",
+                        "voice_message": f"Soll ich den Termin '{event_data.get('summary')}' erstellen?",
                         "data": event_data
                     }
                 elif intent == "delete_event":
@@ -258,6 +260,7 @@ class CalendarAgent:
                          return {
                              "status": "confirmation_required",
                              "message": f"ACHTUNG: Ich werde ALLE {len(events)} Termine zwischen {time_min} und {time_max} löschen. Wirklich ausführen?",
+                             "voice_message": f"Achtung. Ich werde {len(events)} Termine löschen. Bist du sicher?",
                              "data": event_data
                          }
 
@@ -266,20 +269,22 @@ class CalendarAgent:
                         return {
                             "status": "confirmation_required",
                             "message": f"Ich werde den Termin '{target_event.get('summary')}' ({target_event.get('start').get('dateTime')}) löschen. Einverstanden?",
+                            "voice_message": f"Soll ich den Termin '{target_event.get('summary')}' wirklich löschen?",
                             "data": event_data
                         }
-                    return {"status": "error", "message": f"Konnte Termin '{event_data.get('summary')}' nicht finden."}
+                    return {"status": "error", "message": f"Konnte Termin '{event_data.get('summary')}' nicht finden.", "voice_message": "Ich habe diesen Termin nicht gefunden."}
                 elif intent == "update_event":
                     target_event = self._find_event(event_data.get('summary'), event_data.get('timeMin'))
                     if target_event:
                          return {
                             "status": "confirmation_required",
                             "message": f"Ich werde den Termin '{target_event.get('summary')}' aktualisieren. Einverstanden?",
+                            "voice_message": f"Soll ich den Termin '{target_event.get('summary')}' aktualisieren?",
                             "data": event_data
                         }
-                    return {"status": "error", "message": f"Konnte Termin '{event_data.get('summary')}' nicht finden."}
+                    return {"status": "error", "message": f"Konnte Termin '{event_data.get('summary')}' nicht finden.", "voice_message": "Ich habe diesen Termin nicht gefunden."}
                 
-                return {"status": "success", "message": "Befehl verstanden (Dry Run)."}
+                return {"status": "success", "message": "Befehl verstanden (Dry Run).", "voice_message": "Verstanden."}
 
             # EXECUTION
             if intent == "create_event":
@@ -290,6 +295,7 @@ class CalendarAgent:
                 return {
                     "status": "success", 
                     "message": f"Termin erstellt: {event.get('htmlLink')}",
+                    "voice_message": f"Ich habe den Termin '{event_data.get('summary')}' erstellt.",
                     "data": event
                 }
             
@@ -313,13 +319,13 @@ class CalendarAgent:
                          except Exception as del_err:
                              print(f"Error deleting event {e['id']}: {del_err}")
                              
-                     return {"status": "success", "message": f"Es wurden {count} Termine gelöscht."}
+                     return {"status": "success", "message": f"Es wurden {count} Termine gelöscht.", "voice_message": f"Ich habe {count} Termine gelöscht."}
 
                 target_event = self._find_event(event_data.get('summary'), event_data.get('timeMin'))
                 if target_event:
                     service.events().delete(calendarId='primary', eventId=target_event['id']).execute()
-                    return {"status": "success", "message": f"Termin '{target_event.get('summary')}' wurde gelöscht."}
-                return {"status": "error", "message": f"Konnte Termin '{event_data.get('summary')}' nicht finden."}
+                    return {"status": "success", "message": f"Termin '{target_event.get('summary')}' wurde gelöscht.", "voice_message": "Der Termin wurde gelöscht."}
+                return {"status": "error", "message": f"Konnte Termin '{event_data.get('summary')}' nicht finden.", "voice_message": "Ich konnte den Termin nicht finden."}
 
             elif intent == "update_event":
                 target_event = self._find_event(event_data.get('summary'), event_data.get('timeMin'))
@@ -331,8 +337,8 @@ class CalendarAgent:
                     if 'timeMin' in updated_event: del updated_event['timeMin']
                     
                     service.events().patch(calendarId='primary', eventId=target_event['id'], body=updated_event).execute()
-                    return {"status": "success", "message": f"Termin '{target_event.get('summary')}' wurde aktualisiert."}
-                return {"status": "error", "message": f"Konnte Termin '{event_data.get('summary')}' nicht finden."}
+                    return {"status": "success", "message": f"Termin '{target_event.get('summary')}' wurde aktualisiert.", "voice_message": "Der Termin wurde aktualisiert."}
+                return {"status": "error", "message": f"Konnte Termin '{event_data.get('summary')}' nicht finden.", "voice_message": "Termin nicht gefunden."}
 
             elif intent == "list_events":
                 # ... (existing list logic)
@@ -356,6 +362,7 @@ class CalendarAgent:
                 return {
                     "status": "success",
                     "message": f"Ich habe {len(events)} Termine gefunden.",
+                    "voice_message": f"Ich habe {len(events)} Termine für diesen Zeitraum gefunden.",
                     "data": events,
                     "intent": "list_events"
                 }

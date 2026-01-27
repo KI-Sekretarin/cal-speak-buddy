@@ -1,30 +1,75 @@
 # 📅 CalSpeakBuddy - Local AI Calendar Assistant
 
-**🚀 [CLICK HERE FOR SETUP GUIDE (SETUP_GUIDE.md)](./SETUP_GUIDE.md)** | **[FOR AGENTS: PROJECT CONTEXT](./CONTEXT.md)**
+**🚀 KI-Sekretärin mit 100% lokaler AI-Verarbeitung**
 
-This project uses **Local AI (Ollama + Whisper)** to control your Google Calendar via voice and providing an AI Business Chat.
+Dieses Projekt nutzt **Local AI (Ollama + Whisper)** um deinen Google Kalender per Sprache zu steuern und bietet einen intelligenten Business-Chat.
 
-## Features
-*   **Voice Commands**: Create, List, Update, and Delete events.
-*   **AI Business Chat**: Chat with a customizable AI assistant trained on your company data.
-*   **Company Profile**: Manage business details and product catalog for the AI.
-*   **Local Privacy**: Speech processing (Whisper) and reasoning (Llama 3.2) run 100% locally.
-*   **Google Integration**: Connects securely to your Google Calendar.
-*   **Modern UI**: Built with React, Vite, and Shadcn UI.
+## ✨ Features
 
-## 🏗️ Infrastructure & Architecture
+*   **🎙️ Sprachsteuerung (Natural Mode)**: Freihändiges Erstellen, Bearbeiten und Löschen von Terminen.
+*   **🧠 Lokale Intelligenz**: Whisper (Speech-to-Text) und Llama/Qwen (Reasoning) laufen lokal (Datenschutz!).
+*   **💬 AI Business Chat**: Chatte mit einer anpassbaren KI über deine Geschäftsdaten.
+*   **🏢 Firmenprofil**: Verwalte Geschäftsdetails und Produktkataloge für das KI-Wissen.
+*   **📅 Google Integration**: Sichere Verbindung zu Google Calendar.
 
-For a detailed overview of the project's infrastructure, components, and data flow, please refer to [INFRASTRUCTURE.md](./INFRASTRUCTURE.md).
+## 🚀 Schnellstart (Für das Team)
 
-## Quick Start
+Um das Projekt zu starten, führe einfach dieses Skript aus:
 
-1.  **Clone** the repo.
-2.  **Follow the [Setup Guide](./SETUP_GUIDE.md)** to install dependencies (Ollama, Python, Node.js).
-3.  **Run**:
-    *   Backend: `./restart_agent.sh` (in `services/whisper-server`)
-    *   Frontend: `npm run dev`
+```bash
+./start_all.sh
+```
 
-## Technologies
-*   **Frontend**: React, TypeScript, Vite, Tailwind CSS
-*   **Backend**: Python, FastAPI
-*   **AI**: Faster-Whisper, Ollama (Llama 3.2)
+Das Skript kümmert sich um:
+1.  Bereinigen von alten Prozessen.
+2.  Starten des **Whisper-Servers** (Port 9000).
+3.  Starten des **Ollama-Workers**.
+4.  Starten des **Frontend** (Port 8080).
+
+### Voraussetzungen
+
+Stelle sicher, dass folgende Tools installiert sind:
+*   **Node.js** (v18+)
+*   **Python** (v3.12+)
+*   **Ollama** (muss laufen: `ollama serve`)
+*   **Google Calendar Credentials** (`credentials.json` im `services/whisper-server` Ordner)
+*   **Supabase** (Env Variablen in `.env` und `services/ollama-worker/.env`)
+
+## 🛠️ Installation (Erstes Mal)
+
+Falls du das Projekt zum ersten Mal klonst:
+
+1.  **Frontend Dependencies**:
+    ```bash
+    npm install
+    ```
+
+2.  **Backend Dependencies**:
+    ```bash
+    cd services/whisper-server
+    python3 -m venv .venv
+    source .venv/bin/activate
+    pip install -r requirements.txt
+    ```
+
+3.  **Ollama Worker Dependencies**:
+    ```bash
+    cd services/ollama-worker
+    npm install
+    ```
+
+4.  **Starten**:
+    ```bash
+    ./start_all.sh
+    ```
+
+## 🏗️ Struktur
+
+*   `src/`: React Frontend (Shadcn UI, Vite).
+*   `services/whisper-server/`: Python FastAPI Backend für Spracherkennung & Kalender-Logik.
+*   `services/ollama-worker/`: TypeScript Worker für Hintergrundaufgaben (E-Mail, Chat).
+
+## 📝 Dokumentation
+*   [Setup Guide](./SETUP_GUIDE.md)
+*   [Infrastruktur](./INFRASTRUCTURE.md)
+*   [Whisper Anleitung](./WHISPER_ANLEITUNG.md)

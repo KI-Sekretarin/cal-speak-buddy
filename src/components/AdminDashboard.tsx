@@ -16,7 +16,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Eye, RefreshCw, Sparkles, Archive, Inbox, Mail, FileText, Trash2 } from 'lucide-react';
+import { Eye, RefreshCw, Sparkles, Archive, Inbox, Mail, FileText, Trash2, User } from 'lucide-react';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
@@ -47,11 +47,19 @@ interface Inquiry {
   }[];
   ai_category?: string | null;
   source?: string;
+  assigned_to?: string | null;
+}
+
+interface Employee {
+  id: string;
+  full_name: string;
+  role: string;
 }
 
 export default function AdminDashboard({ onSelectInquiry }: { onSelectInquiry: (id: string) => void }) {
   const { user } = useAuth();
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
@@ -62,28 +70,57 @@ export default function AdminDashboard({ onSelectInquiry }: { onSelectInquiry: (
     return inqs.filter(i => i.ai_category === selectedCategory);
   };
 
-  const loadInquiries = async () => {
+  const loadData = async () => {
     if (!user) return;
 
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('inquiries')
-        .select(`
-          *,
-          ai_responses(id, suggested_response, is_approved, sent_at)
-        `)
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+      const [inquiriesRes, employeesRes] = await Promise.all([
+        supabase
+          .from('inquiries')
+          .select(`
+            *,
+            ai_responses(id, suggested_response, is_approved, sent_at)
+          `)
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('employee_profiles')
+          .select('id, full_name, role')
+          .eq('employer_id', user.id)
+      ]);
 
-      if (error) throw error;
+      if (inquiriesRes.error) throw inquiriesRes.error;
+      if (employeesRes.error) throw employeesRes.error;
 
-      setInquiries(data || []);
+      setInquiries(inquiriesRes.data || []);
+      setEmployees(employeesRes.data || []);
     } catch (error) {
-      toast.error('Fehler beim Laden der Anfragen');
+      toast.error('Fehler beim Laden der Daten');
       console.error(error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleAssignInquiry = async (inquiryId: string, employeeId: string | 'unassigned') => {
+    try {
+      const assignedTo = employeeId === 'unassigned' ? null : employeeId;
+
+      const { error } = await supabase
+        .from('inquiries')
+        .update({ assigned_to: assignedTo })
+        .eq('id', inquiryId);
+
+      if (error) throw error;
+
+      setInquiries(inquiries.map(i =>
+        i.id === inquiryId ? { ...i, assigned_to: assignedTo } : i
+      ));
+      toast.success('Zuweisung aktualisiert');
+    } catch (error) {
+      toast.error('Fehler bei der Zuweisung');
+      console.error(error);
     }
   };
 
@@ -105,8 +142,8 @@ export default function AdminDashboard({ onSelectInquiry }: { onSelectInquiry: (
   };
 
   useEffect(() => {
-    loadInquiries();
-  }, []);
+    loadData();
+  }, [user]);
 
   const getStatusBadge = (status: string) => {
     const variants = {
@@ -124,17 +161,6 @@ export default function AdminDashboard({ onSelectInquiry }: { onSelectInquiry: (
     return <Badge className={variants[status as keyof typeof variants]}>{labels[status as keyof typeof labels]}</Badge>;
   };
 
-  const getCategoryLabel = (category: string) => {
-    const labels = {
-      general: 'Allgemein',
-      technical: 'Technisch',
-      billing: 'Abrechnung',
-      feedback: 'Feedback',
-      other: 'Sonstiges',
-    };
-    return labels[category as keyof typeof labels] || category;
-  };
-
   const hasAIResponse = (inquiry: Inquiry) => {
     return inquiry.ai_responses && inquiry.ai_responses.length > 0;
   };
@@ -146,18 +172,17 @@ export default function AdminDashboard({ onSelectInquiry }: { onSelectInquiry: (
           <TableRow>
             <TableHead>Datum</TableHead>
             <TableHead>Name</TableHead>
-            <TableHead>E-Mail</TableHead>
             <TableHead>Betreff</TableHead>
             <TableHead>Kategorie</TableHead>
-            <TableHead>Quelle</TableHead>
             <TableHead>Status</TableHead>
+            <TableHead>Zugewiesen an</TableHead>
             <TableHead className="text-right">Aktionen</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {filteredInquiries.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+              <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                 Keine Anfragen in diesem Bereich
               </TableCell>
             </TableRow>
@@ -167,8 +192,10 @@ export default function AdminDashboard({ onSelectInquiry }: { onSelectInquiry: (
                 <TableCell className="font-mono text-sm">
                   {format(new Date(inquiry.created_at), 'dd.MM.yyyy HH:mm', { locale: de })}
                 </TableCell>
-                <TableCell className="font-medium">{inquiry.name}</TableCell>
-                <TableCell className="text-muted-foreground">{inquiry.email}</TableCell>
+                <TableCell className="font-medium">
+                  {inquiry.name}
+                  <div className="text-xs text-muted-foreground">{inquiry.email}</div>
+                </TableCell>
                 <TableCell className="max-w-xs truncate">{inquiry.subject}</TableCell>
                 <TableCell>
                   {inquiry.ai_category ? (
@@ -177,24 +204,6 @@ export default function AdminDashboard({ onSelectInquiry }: { onSelectInquiry: (
                     </Badge>
                   ) : (
                     <span className="text-muted-foreground text-sm">-</span>
-                  )}
-                </TableCell>
-                <TableCell>
-                  {inquiry.source === 'email' ? (
-                    <Badge variant="secondary" className="gap-1.5 bg-blue-500/10 text-blue-500 border-blue-500/20 hover:bg-blue-500/20 transition-colors">
-                      <Mail className="h-3.5 w-3.5" />
-                      E-Mail
-                    </Badge>
-                  ) : inquiry.source === 'chat' ? (
-                    <Badge variant="secondary" className="gap-1.5 bg-purple-500/10 text-purple-500 border-purple-500/20 hover:bg-purple-500/20 transition-colors">
-                      <Sparkles className="h-3.5 w-3.5" />
-                      Chat
-                    </Badge>
-                  ) : (
-                    <Badge variant="secondary" className="gap-1.5 bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20 transition-colors">
-                      <FileText className="h-3.5 w-3.5" />
-                      Formular
-                    </Badge>
                   )}
                 </TableCell>
                 <TableCell>
@@ -207,6 +216,24 @@ export default function AdminDashboard({ onSelectInquiry }: { onSelectInquiry: (
                       </Badge>
                     )}
                   </div>
+                </TableCell>
+                <TableCell>
+                  <Select
+                    value={inquiry.assigned_to || 'unassigned'}
+                    onValueChange={(val) => handleAssignInquiry(inquiry.id, val)}
+                  >
+                    <SelectTrigger className="w-[140px] h-8 text-xs">
+                      <SelectValue placeholder="Zuweisen" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="unassigned">Nicht zugewiesen</SelectItem>
+                      {employees.map(emp => (
+                        <SelectItem key={emp.id} value={emp.id}>
+                          {emp.full_name} ({emp.role})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
@@ -268,7 +295,7 @@ export default function AdminDashboard({ onSelectInquiry }: { onSelectInquiry: (
             <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
               Admin Dashboard
             </h1>
-            <p className="text-muted-foreground mt-2">Verwalten Sie alle Kundenanfragen</p>
+            <p className="text-muted-foreground mt-2">Verwalten Sie alle Kundenanfragen und Ticket-Zuweisungen</p>
           </div>
           <div className="flex items-center gap-2">
             <Select value={selectedCategory} onValueChange={setSelectedCategory}>
@@ -286,7 +313,7 @@ export default function AdminDashboard({ onSelectInquiry }: { onSelectInquiry: (
               </SelectContent>
             </Select>
             <EmailSyncButton />
-            <Button onClick={loadInquiries} disabled={isLoading} variant="outline" className="gap-2">
+            <Button onClick={loadData} disabled={isLoading} variant="outline" className="gap-2">
               <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
               Aktualisieren
             </Button>

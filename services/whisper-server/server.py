@@ -22,12 +22,14 @@ app.add_middleware(
 )
 
 # Initialize Whisper Model
+# Initialize Whisper Model
 # model_size = "large-v3"
-# model_size = "medium"
-model_size = "base"
-print(f"Loading Whisper model '{model_size}'...")
-model = WhisperModel(model_size, device="cpu", compute_type="int8")
-print("Whisper model loaded successfully!")
+model_size = "large-v3"
+# model_size = "base"
+print(f"⏳ Loading Whisper model '{model_size}' (this may take a while significantly on first run)...")
+# optimization for Apple Silicon (M-series): float16 is usually faster/better than int8
+model = WhisperModel(model_size, device="cpu", compute_type="float16")
+print(f"✅ Whisper model '{model_size}' loaded successfully!")
 
 # Initialize Calendar Agent
 try:
@@ -49,7 +51,14 @@ async def transcribe_file(file: UploadFile = File(...)):
     
     try:
         # Transcribe
-        segments, info = model.transcribe(temp_filename, beam_size=5)
+        segments, info = model.transcribe(
+            temp_filename, 
+            beam_size=10, 
+            language="de",
+            initial_prompt="Das ist ein Befehl für einen KI Kalender-Assistenten. Zum Beispiel: 'Lege einen Termin zum Mittagessen an'.",
+            vad_filter=True,
+            vad_parameters=dict(min_silence_duration_ms=500)
+        )
         
         transcription_text = ""
         for segment in segments:

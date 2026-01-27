@@ -93,6 +93,34 @@ async function fetchProfile(userId: string) {
     return data;
 }
 
+async function fetchEmployees(companyId: string, role: string) {
+    // Fetch employees for this company with matching role
+    // Also fetch their current open ticket count to estimate load
+    const { data: employees, error } = await supabase
+        .from('employee_profiles')
+        .select('id, full_name, skills, max_capacity')
+        .eq('employer_id', companyId)
+        .eq('role', role);
+
+    if (error || !employees) return [];
+
+    // For each employee, count "in_progress" or "open" tickets assigned to them
+    const employeesWithLoad = await Promise.all(employees.map(async (emp) => {
+        const { count } = await supabase
+            .from('inquiries')
+            .select('*', { count: 'exact', head: true })
+            .eq('assigned_to', emp.id)
+            .neq('status', 'closed');
+
+        return {
+            ...emp,
+            current_load: count || 0
+        };
+    }));
+
+    return employeesWithLoad;
+}
+
 async function analyzeInquiry(subject: string, message: string, profile: any) {
     // 1. Basic Company Info
     const companyName = profile?.company_name || 'our company';
@@ -148,9 +176,45 @@ async function analyzeInquiry(subject: string, message: string, profile: any) {
         ? profile.response_template_signature
         : (language === 'de' ? `Mit freundlichen Grüßen,\n${companyName}` : `Best regards,\n${companyName}`);
 
+
+    // --- PRE-FETCH EMPLOYEES FOR CONTEXT ---
+    // We don't know the category yet, so we have to ask the AI to categorize AND assign in one go,
+    // Or we fetch ALL employees. Fetching all is safer for prompt context.
+    let employeeContext = "";
+    let employees: any[] = [];
+
+    if (profile?.id) {
+        // Fetch ALL employees for this company
+        const { data: allEmps, error } = await supabase
+            .from('employee_profiles')
+            .select('id, full_name, role, skills, max_capacity')
+            .eq('employer_id', profile.id);
+
+        if (allEmps && allEmps.length > 0) {
+            // Get load for all
+            employees = await Promise.all(allEmps.map(async (emp) => {
+                const { count } = await supabase
+                    .from('inquiries')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('assigned_to', emp.id)
+                    .neq('status', 'closed');
+                return { ...emp, current_load: count || 0 };
+            }));
+
+            employeeContext = JSON.stringify(employees.map(e => ({
+                id: e.id,
+                name: e.full_name,
+                role: e.role,
+                skills: e.skills,
+                load: `${e.current_load}/${e.max_capacity}`
+            })));
+        }
+    }
+
+
     const prompt = `
 You are a professional AI secretary for "${companyName}" (${industry}).
-Your goal is to categorize the inquiry and write the BODY of a professional email response in ${language === 'de' ? 'GERMAN' : 'ENGLISH'}.
+Your goal is to categorize the inquiry, write the email BODY, AND assign it to the best employee.
 
 === CONTEXT (The ONLY truth) ===
 Description: ${description}
@@ -165,17 +229,21 @@ FAQs: ${faqs}
 Notes: ${importantNotes}
 Instructions: ${instructions}
 
+=== EMPLOYEES (Candidates) ===
+${employeeContext}
+
 === CRITICAL RULES ===
 1. **SPAM DETECTION (High Priority)**:
    - If the message is a Newsletter, Receipt, Automated Notification, Sales Pitch, or purely informational (no question asked) -> CATEGORIZE AS 'spam'.
    - If it's "spam", return "body_text": "SPAM_DETECTED".
 
-2. **Check Availability First**:
-   - User asks for Item X.
-   - Look for Item X in "Sortiment" or "Description".
-   - If EXACT match found -> Say YES.
-   - If ONLY related items found (e.g. user asks for "Golfschläger" but you only have "Golfbälle") -> Say: "We currently only have [Related Item]. regarding [Item X], I will check internally."
-   - If NO match found -> Say: "I have no information on that, I will check internally."
+2. **Categorization & Assignment**:
+   - Categorize into: ${categoriesList}.
+   - IF category matches an Employee's Role:
+     - Check 'skills': Does the employee have relevant skills for the inquiry?
+     - Check 'load': Is the employee overloaded (current_load >= max_capacity)? Prefer those with lower load.
+     - Pick the best 'id' and put it in "assigned_employee_id".
+     - If no one suitable, set "assigned_employee_id": null.
 
 3. **Content Only**:
    - Output ONLY the body paragraphs.
@@ -187,8 +255,9 @@ Instructions: ${instructions}
 4. **Tone**: ${tone}
 
 === TASK ===
-1. Categorize into: ${categoriesList}.
-2. Write the email BODY only.
+1. Categorize.
+2. Select Employee (if applicable).
+3. Write Email Body.
 
 === INQUIRY ===
 Subject: ${subject}
@@ -197,6 +266,7 @@ Message: ${message}
 Return valid JSON ONLY:
 {
   "category": "category_name",
+  "assigned_employee_id": "uuid_or_null",
   "body_text": "..."
 }
 `;
@@ -235,6 +305,7 @@ Return valid JSON ONLY:
 
         return {
             category: category,
+            assigned_to: result.assigned_employee_id || null,
             response: fullResponse
         };
     } catch (error) {
@@ -453,6 +524,7 @@ async function processInquiry(inquiry: any) {
             .update({
                 ai_category: analysis.category,
                 ai_response: analysis.response,
+                assigned_to: analysis.assigned_to, // Save the assignment
                 status: 'open'
             })
             .eq('id', inquiry.id);

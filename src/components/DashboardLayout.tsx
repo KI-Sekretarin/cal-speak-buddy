@@ -44,6 +44,7 @@ const navigation = [
   { name: 'Kiosk-Modul', href: '/kiosk', icon: Wifi, active: false },
   { name: 'Einstellungen', href: '/settings', icon: Settings, active: true },
   { name: 'Hilfe', href: '/help', icon: HelpCircle, active: true },
+  { name: 'Mitarbeiter', href: '/employees', icon: User, active: true },
 ];
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {

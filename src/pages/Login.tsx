@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { supabase } from "@/integrations/supabase/client";
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -19,7 +20,20 @@ export default function Login() {
 
   useEffect(() => {
     if (user) {
-      navigate('/admin');
+      const checkRole = async () => {
+        const { data } = await supabase
+          .from('employee_profiles')
+          .select('id')
+          .eq('id', user.id)
+          .single();
+
+        if (data) {
+          navigate('/employee-dashboard');
+        } else {
+          navigate('/admin');
+        }
+      };
+      checkRole();
     }
   }, [user, navigate]);
 

@@ -4,7 +4,8 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Mic, Square, Upload, Check, X, Edit2, Send, Settings, Clock, Calendar } from 'lucide-react';
+import { Mic, Square, Upload, Check, X, Edit2, Send, Settings, Clock, Calendar, Volume2, Sparkles } from 'lucide-react';
+import { useVAD } from '@/hooks/useVAD';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,8 +35,90 @@ const CalSpeakBuddy = () => {
   const [confirmationMessage, setConfirmationMessage] = useState("");
   const [pendingCommandText, setPendingCommandText] = useState<string>("");
   const [timeRemaining, setTimeRemaining] = useState<string>("");
+  const [isNaturalMode, setIsNaturalMode] = useState(false);
+  const [isSynthesizing, setIsSynthesizing] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+  const streamRef = useRef<MediaStream | null>(null);
+
+  // VAD Implementation
+  const { isSpeaking, startVAD, stopVAD, volume } = useVAD({
+    minVolume: 0.03, // Slightly more sensitive
+    silenceDelay: 1000, // Very fast response for high-performance usage
+    onSpeechStart: () => {
+      if (isNaturalMode && !isRecording && !isProcessingCommand && !isSynthesizing) {
+        console.log("🗣️ Speech started - Auto-recording...");
+        startRecording(true);
+      }
+    },
+    onSpeechEnd: () => {
+      if (isNaturalMode && isRecording) {
+        console.log("🤫 Silence detected - Stopping recording...");
+        stopRecording();
+      }
+    }
+  });
+
+  // Effect to manage VAD based on mode
+  useEffect(() => {
+    if (isNaturalMode) {
+      // Create a persistent stream for VAD listening
+      navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+        streamRef.current = stream;
+        startVAD(stream);
+        toast({
+          title: "Natural Mode Aktiv",
+          description: "Ich höre zu. Sprechen Sie einfach drauf los!",
+          className: "bg-green-500/10 border-green-500/50"
+        });
+      }).catch(err => {
+        console.error("Failed to start VAD stream", err);
+        setIsNaturalMode(false);
+        toast({ title: "Fehler", description: "Mikrofonzugriff fehlgeschlagen", variant: "destructive" });
+      });
+    } else {
+      stopVAD();
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
+      }
+    }
+  }, [isNaturalMode, startVAD, stopVAD]);
+
+  const speakText = (text: string) => {
+    if (!text) return;
+    setIsSynthesizing(true);
+
+    // Stop any current speech
+    window.speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = "de-DE";
+    utterance.rate = 1.1; // Slightly faster for more natural flow
+    utterance.pitch = 1.0;
+
+    // Try to find a better German voice
+    const voices = window.speechSynthesis.getVoices();
+    const germanVoices = voices.filter(v => v.lang.startsWith('de'));
+
+    // Priority: Google Deutsch -> Anna (Mac) -> Any German
+    const preferredVoice = germanVoices.find(v => v.name.includes("Google") || v.name.includes("Anna")) || germanVoices[0];
+
+    if (preferredVoice) {
+      utterance.voice = preferredVoice;
+      console.log("Using Voice:", preferredVoice.name);
+    }
+
+    utterance.onend = () => {
+      setIsSynthesizing(false);
+    };
+
+    utterance.onerror = () => {
+      setIsSynthesizing(false);
+    };
+
+    window.speechSynthesis.speak(utterance);
+  };
 
   // Load token from localStorage on mount
   // Load token from localStorage on mount
@@ -173,16 +256,23 @@ const CalSpeakBuddy = () => {
     return arrayBuffer;
   };
 
-  const startRecording = async () => {
+  const startRecording = async (autoStart = false) => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          sampleRate: 44100,
-          channelCount: 1,
-          echoCancellation: true,
-          noiseSuppression: true,
-        }
-      });
+      // If we already have a stream from VAD, use it (clone it?), otherwise get new one
+      // Actually standard mediaRecorder needs its own stream or we reuse the key one.
+      // To be safe and simple, let's get a fresh stream or use the existing one if active.
+      let stream = streamRef.current;
+
+      if (!stream || !stream.active) {
+        stream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            sampleRate: 44100,
+            channelCount: 1,
+            echoCancellation: true,
+            noiseSuppression: true,
+          }
+        });
+      }
 
       const mediaRecorder = new MediaRecorder(stream, {
         mimeType: 'audio/webm;codecs=opus'
@@ -202,12 +292,20 @@ const CalSpeakBuddy = () => {
         const wavBlob = await convertToWav(webmBlob);
         setAudioBlob(wavBlob);
 
-        stream.getTracks().forEach(track => track.stop());
+        // Do NOT stop tracks if in Natural Mode, we need them for VAD!
+        if (!isNaturalMode && stream) {
+          stream.getTracks().forEach(track => track.stop());
+        }
 
-        toast({
-          title: "Aufnahme gespeichert",
-          description: "Audio als WAV-Datei bereit zum Hochladen",
-        });
+        if (isNaturalMode) {
+          // Auto-Upload in Natural Mode
+          uploadAudio(wavBlob);
+        } else {
+          toast({
+            title: "Aufnahme gespeichert",
+            description: "Audio als WAV-Datei bereit zum Hochladen",
+          });
+        }
       };
 
       mediaRecorder.start();
@@ -238,13 +336,15 @@ const CalSpeakBuddy = () => {
     }
   };
 
-  const uploadAudio = async () => {
-    if (!audioBlob) return;
+  // Modified uploadAudio to accept blob argument for auto-upload
+  const uploadAudio = async (blobToUpload?: Blob) => {
+    const blob = blobToUpload || audioBlob;
+    if (!blob) return;
 
     setIsUploading(true);
     try {
       const formData = new FormData();
-      formData.append('file', audioBlob, 'recording.wav');
+      formData.append('file', blob, 'recording.wav');
 
       const response = await fetch('http://localhost:9000/transcribe-file', {
         method: 'POST',
@@ -259,22 +359,38 @@ const CalSpeakBuddy = () => {
 
       setTranscription(result.text);
       setEditedTranscription(result.text);
-      setIsConfirmationPending(true);
-      setIsEditing(false);
 
-      toast({
-        title: "Transkription erfolgreich",
-        description: `Audio transkribiert (${result.duration?.toFixed(1)}s)`,
-      });
+      if (isNaturalMode) {
+        // Auto-Execute in Natural Mode
+        if (result.text.trim().length > 2) { // Minimal length check
+          executeCommand(result.text, false); // FALSE = NO DRY RUN = IMMEDIATE EXECUTION
+        } else {
+          toast({ title: "Ignoriert", description: "Keine Sprache erkannt." });
+        }
+      } else {
+        setIsConfirmationPending(true);
+        setIsEditing(false);
+      }
+
+      // Cleanup
+      if (!isNaturalMode) {
+        toast({
+          title: "Transkription erfolgreich",
+          description: `Audio transkribiert (${result.duration?.toFixed(1)}s)`,
+        });
+      }
 
       setAudioBlob(null);
     } catch (error) {
       console.error('Transcription error:', error);
       toast({
         title: "Transkriptions-Fehler",
-        description: error instanceof Error ? error.message : "Whisper-Server nicht erreichbar. Läuft er auf Port 9000?",
+        description: error instanceof TypeError && error.message.includes("Failed to fetch")
+          ? "Server nicht erreichbar. Startet er noch (großes Modell)?"
+          : (error instanceof Error ? error.message : "Whisper-Server nicht erreichbar."),
         variant: "destructive",
       });
+      if (isNaturalMode) speakText("Fehler bei der Transkription.");
     } finally {
       setIsUploading(false);
     }
@@ -292,7 +408,7 @@ const CalSpeakBuddy = () => {
     }
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 120000); // 120s timeout (Ollama is heavy)
+    const timeoutId = setTimeout(() => controller.abort(), 120000);
 
     try {
       console.log(`Sende Befehl an Backend (DryRun: ${dryRun}):`, text);
@@ -320,15 +436,30 @@ const CalSpeakBuddy = () => {
       console.log("Backend Antwort:", data);
 
       if (data.status === 'confirmation_required') {
-        setConfirmationMessage(data.message);
-        setShowConfirmationDialog(true);
+        if (isNaturalMode) {
+          // In natural mode, we speak the warning and listen for confirmation
+          speakText(data.message + " Bitte bestätigen mit Ja oder Nein.");
+          // Ideally we would switch to a specific "confirmation listening mode" here
+          // For now, let's fall back to manual dialog so they see the importance
+          setConfirmationMessage(data.message);
+          setShowConfirmationDialog(true);
+        } else {
+          setConfirmationMessage(data.message);
+          setShowConfirmationDialog(true);
+        }
         return;
       }
 
       if (data.status === 'success') {
         if (!silent) setCommandResponse(data.message);
 
-        // Handle List Events Intent
+        // Play TTS Success Message
+        if (isNaturalMode && data.message) {
+          // Clean message for TTS if needed (remove URLs etc) - Backend handles this better but frontend can strip HTML
+          const cleanMsg = data.voice_message || data.message.replace(/<[^>]*>?/gm, '');
+          speakText(cleanMsg);
+        }
+
         if (data.intent === 'list_events' && Array.isArray(data.data)) {
           setEvents(data.data);
           setLastUpdated(new Date());
@@ -360,6 +491,7 @@ const CalSpeakBuddy = () => {
         }
       } else {
         setCommandResponse(`Fehler: ${data.message}`);
+        if (isNaturalMode) speakText("Fehler: " + data.message);
         toast({
           title: "Fehler",
           description: data.message,
@@ -372,10 +504,11 @@ const CalSpeakBuddy = () => {
       let errorMessage = 'Fehler bei der Kommunikation mit dem Server.';
 
       if (error.name === 'AbortError') {
-        errorMessage = 'Zeitüberschreitung: Der Server antwortet nicht rechtzeitig (Ollama ist beschäftigt).';
+        errorMessage = 'Zeitüberschreitung: Der Server antwortet nicht rechtzeitig.';
       }
 
       setCommandResponse(errorMessage);
+      if (isNaturalMode) speakText("Ich konnte den Server nicht erreichen.");
       toast({
         title: "Verbindungsfehler",
         description: errorMessage,
@@ -410,12 +543,21 @@ const CalSpeakBuddy = () => {
       {/* Header */}
       <div className="p-4 border-b border-border flex justify-between items-center bg-card/50 backdrop-blur-sm">
         <h2 className="text-xl font-semibold flex items-center gap-2">
-          <div className="p-2 bg-primary/10 rounded-full">
-            <Mic className="h-5 w-5 text-primary" />
+          <div className={`p-2 rounded-full transition-colors ${isNaturalMode ? 'bg-green-500/20' : 'bg-primary/10'}`}>
+            {isNaturalMode ? <Sparkles className="h-5 w-5 text-green-600" /> : <Mic className="h-5 w-5 text-primary" />}
           </div>
-          Sprachsteuerung
+          Sprachsteuerung {isNaturalMode && <span className="text-xs bg-green-500/20 text-green-700 px-2 py-0.5 rounded-full">Natural Mode</span>}
         </h2>
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsNaturalMode(!isNaturalMode)}
+            className={isNaturalMode ? "border-green-500 text-green-600 bg-green-50" : ""}
+          >
+            <Sparkles className="h-4 w-4 mr-2" />
+            {isNaturalMode ? 'Natural Mode Aus' : 'Natural Mode Ein'}
+          </Button>
           <Link to="/settings">
             <Button variant="ghost" size="icon" title="Einstellungen">
               <Settings className="h-5 w-5" />
@@ -433,14 +575,24 @@ const CalSpeakBuddy = () => {
             <div className="relative">
               {!isRecording ? (
                 <button
-                  onClick={startRecording}
-                  disabled={isUploading || isProcessingCommand}
-                  className="relative group disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={() => startRecording(false)}
+                  disabled={isUploading || isProcessingCommand || (isNaturalMode && isSpeaking)}
+                  className={`relative group disabled:opacity-50 disabled:cursor-not-allowed ${isNaturalMode ? 'cursor-default' : ''}`}
                   aria-label="Aufnahme starten"
                 >
-                  <div className="absolute inset-0 bg-primary/30 rounded-full blur-2xl opacity-75 group-hover:opacity-100 transition-opacity animate-pulse" />
-                  <div className="relative w-32 h-32 bg-gradient-to-br from-primary via-primary to-accent rounded-full flex items-center justify-center transform transition-all group-hover:scale-110 group-active:scale-95 shadow-2xl">
-                    <Mic className="h-16 w-16 text-primary-foreground" />
+                  <div className={`absolute inset-0 rounded-full blur-2xl opacity-75 transition-opacity animate-pulse ${isNaturalMode ? 'bg-green-500/30' : 'bg-primary/30'}`} />
+                  <div className={`relative w-32 h-32 rounded-full flex items-center justify-center transform transition-all shadow-2xl ${isNaturalMode
+                    ? 'bg-gradient-to-br from-green-500 via-green-600 to-emerald-600 scale-105'
+                    : 'bg-gradient-to-br from-primary via-primary to-accent group-hover:scale-110 group-active:scale-95'
+                    }`}>
+                    {isNaturalMode ? (
+                      <div className="flex flex-col items-center">
+                        <Mic className="h-12 w-12 text-white mb-1" />
+                        <span className="text-[10px] text-white/80 font-mono uppercase tracking-widest">{isSpeaking ? 'HÖRE ZU...' : 'BEREIT'}</span>
+                      </div>
+                    ) : (
+                      <Mic className="h-16 w-16 text-primary-foreground" />
+                    )}
                   </div>
                 </button>
               ) : (
@@ -451,7 +603,14 @@ const CalSpeakBuddy = () => {
                 >
                   <div className="absolute inset-0 bg-destructive/30 rounded-full blur-2xl opacity-75 animate-pulse" />
                   <div className="relative w-32 h-32 bg-gradient-to-br from-destructive to-destructive/80 rounded-full flex items-center justify-center transform transition-all group-hover:scale-110 shadow-2xl animate-pulse">
-                    <Square className="h-14 w-14 text-destructive-foreground fill-destructive-foreground" />
+                    {isNaturalMode ? (
+                      <div className="flex flex-col items-center">
+                        <Volume2 className="h-10 w-10 text-white mb-1 animate-bounce" />
+                        <span className="text-[10px] text-white/80 font-mono">AUFNAHME</span>
+                      </div>
+                    ) : (
+                      <Square className="h-14 w-14 text-destructive-foreground fill-destructive-foreground" />
+                    )}
                   </div>
                 </button>
               )}
@@ -462,23 +621,27 @@ const CalSpeakBuddy = () => {
               <h2 className="text-3xl font-bold text-foreground">
                 {isRecording
                   ? "🎙️ Aufnahme läuft..."
-                  : audioBlob
-                    ? "✓ Aufnahme bereit"
-                    : "Bereit zur Aufnahme"
+                  : isNaturalMode
+                    ? isSpeaking ? "👂 Ich höre..." : "Waiting for speech..."
+                    : audioBlob
+                      ? "✓ Aufnahme bereit"
+                      : "Bereit zur Aufnahme"
                 }
               </h2>
               <p className="text-muted-foreground text-lg max-w-md">
                 {isRecording
                   ? "Sprechen Sie jetzt deutlich ins Mikrofon"
-                  : audioBlob
-                    ? "Ihre Aufnahme wurde erfolgreich gespeichert"
-                    : "Klicken Sie auf das Mikrofon, um eine Sprachaufnahme zu starten"
+                  : isNaturalMode
+                    ? "Starten Sie einfach zu sprechen. Ich höre automatisch zu."
+                    : audioBlob
+                      ? "Ihre Aufnahme wurde erfolgreich gespeichert"
+                      : "Klicken Sie auf das Mikrofon, um eine Sprachaufnahme zu starten"
                 }
               </p>
             </div>
 
-            {/* Audio Preview & Upload */}
-            {audioBlob && (
+            {/* Audio Preview & Upload (Only visible in manual mode) */}
+            {audioBlob && !isNaturalMode && (
               <div className="w-full space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div className="rounded-2xl p-6 border-2 border-primary/20 bg-card/50 backdrop-blur-sm">
                   <audio
@@ -489,7 +652,7 @@ const CalSpeakBuddy = () => {
                 </div>
 
                 <Button
-                  onClick={uploadAudio}
+                  onClick={() => uploadAudio()}
                   disabled={isUploading}
                   size="lg"
                   className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-primary to-accent hover:shadow-xl transition-all duration-300"
@@ -499,25 +662,37 @@ const CalSpeakBuddy = () => {
                 </Button>
               </div>
             )}
-            <p className="text-muted-foreground text-sm text-center font-mono">
-              🎤 Lokale Whisper-Transkription (Port 9000)
-            </p>
 
-            {/* Quick Actions */}
-            <div className="w-full pt-6 border-t border-border">
-              <h3 className="text-sm font-semibold text-muted-foreground mb-3 text-center uppercase tracking-wider">Quick Actions</h3>
-              <div className="flex justify-center gap-4">
-                <Button variant="outline" className="h-auto py-3 flex flex-col gap-1 hover:bg-primary/5 hover:border-primary/30" onClick={() => executeCommand("Zeige meine Termine für heute", false)}>
-                  <span className="text-xl">📅</span>
-                  <span className="text-xs font-medium">Heute</span>
-                </Button>
-                <Button variant="outline" className="h-auto py-3 flex flex-col gap-1 hover:bg-primary/5 hover:border-primary/30" onClick={() => executeCommand("Zeige meine Termine für morgen", false)}>
-                  <span className="text-xl">⏭️</span>
-                  <span className="text-xs font-medium">Morgen</span>
-                </Button>
-
+            {isNaturalMode && (transcription || isProcessingCommand) && (
+              <div className="w-full p-4 bg-muted/50 rounded-xl animate-in slide-in-from-bottom-2">
+                <p className="text-sm font-mono text-muted-foreground mb-1">{isProcessingCommand ? 'VERARBEITE...' : 'ERKANNT:'}</p>
+                <p className="text-lg font-medium">{transcription || "..."}</p>
               </div>
-            </div>
+            )}
+
+            {!isNaturalMode && (
+              <p className="text-muted-foreground text-sm text-center font-mono">
+                🎤 Lokale Whisper-Transkription (Port 9000)
+              </p>
+            )}
+
+            {/* Quick Actions (Only Manual Mode) */}
+            {!isNaturalMode && (
+              <div className="w-full pt-6 border-t border-border">
+                <h3 className="text-sm font-semibold text-muted-foreground mb-3 text-center uppercase tracking-wider">Quick Actions</h3>
+                <div className="flex justify-center gap-4">
+                  <Button variant="outline" className="h-auto py-3 flex flex-col gap-1 hover:bg-primary/5 hover:border-primary/30" onClick={() => executeCommand("Zeige meine Termine für heute", false)}>
+                    <span className="text-xl">📅</span>
+                    <span className="text-xs font-medium">Heute</span>
+                  </Button>
+                  <Button variant="outline" className="h-auto py-3 flex flex-col gap-1 hover:bg-primary/5 hover:border-primary/30" onClick={() => executeCommand("Zeige meine Termine für morgen", false)}>
+                    <span className="text-xl">⏭️</span>
+                    <span className="text-xs font-medium">Morgen</span>
+                  </Button>
+
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

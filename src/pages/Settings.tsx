@@ -27,7 +27,7 @@ export default function Settings() {
     }
   }, [profile, loading]);
 
-  const handleUpdate = (field: string, value: any) => {
+  const handleUpdate = (field: string, value: unknown) => {
     const currentProfile = localProfile || profile;
     if (currentProfile) {
       setLocalProfile({
@@ -40,12 +40,43 @@ export default function Settings() {
   const handleSave = async () => {
     if (!localProfile) return;
 
+    // Construct the updates object with local changes
     const updates = {
       ...localProfile,
       profile_completed: true,
     };
 
-    const result = await updateProfile(updates);
+    // Filter out fields that are not in the profiles table to avoid update errors
+    const validKeys = [
+      'company_name', 'industry', 'company_size', 'founded_year', 'tax_id', 'registration_number',
+      'phone', 'mobile', 'fax', 'email', 'website', 'social_media',
+      'street', 'street_number', 'postal_code', 'city', 'state', 'country',
+      'business_hours', 'company_description', 'services_offered', 'target_audience', 'company_values', 'unique_selling_points',
+      'preferred_tone', 'preferred_language', 'response_template_intro', 'response_template_signature',
+      'common_faqs', 'inquiry_categories', 'ai_instructions', 'auto_response_enabled', 'auto_categorization_enabled',
+      'important_notes', 'logo_url', 'brand_colors', 'profile_completed', 'certifications', 'languages_supported',
+      'payment_methods', 'delivery_areas', 'contact_form_slug', 'contact_form_title', 'contact_form_description'
+    ];
+
+    const sanitizedUpdates: Partial<CompanyProfile> = {};
+
+    // Handle special mappings
+    if (localProfile.chat_primary_color || profile?.chat_primary_color) {
+      const color = localProfile.chat_primary_color || profile?.chat_primary_color;
+      sanitizedUpdates.brand_colors = {
+        ...(localProfile.brand_colors || profile?.brand_colors || {}),
+        primary: color // Map chat_primary_color to brand_colors.primary
+      };
+    }
+
+    Object.keys(updates).forEach(key => {
+      if (validKeys.includes(key)) {
+        // Priority to localProfile updates, but updates object is already merged
+        sanitizedUpdates[key] = updates[key as keyof CompanyProfile];
+      }
+    });
+
+    const result = await updateProfile(sanitizedUpdates);
 
     if (result.success) {
       setLocalProfile(null); // Reset to trigger reload

@@ -43,7 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signUp = async (email: string, password: string, fullName: string, companyName?: string) => {
     try {
       const redirectUrl = `${window.location.origin}/`;
-      
+
       const { error } = await supabase.auth.signUp({
         email,
         password,
@@ -65,13 +65,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) throw error;
-      navigate('/admin');
+
+      // Check if user is an employee
+      const { data: employeeData } = await supabase
+        .from('employee_profiles')
+        .select('id')
+        .eq('id', data.user.id)
+        .single();
+
+      if (employeeData) {
+        navigate('/employee-dashboard');
+      } else {
+        navigate('/admin');
+      }
       return { error: null };
     } catch (error) {
       return { error: error as Error };
