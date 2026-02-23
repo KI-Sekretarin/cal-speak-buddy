@@ -28,8 +28,8 @@ import EmployeeDashboard from "./pages/EmployeeDashboard";
 
 const queryClient = new QueryClient();
 
-// TODO: Replace with your actual Google Client ID
-const GOOGLE_CLIENT_ID = "716385579483-bm2b7qi45fdd86gdlfgis6i8k2r5ah9b.apps.googleusercontent.com";
+// TODO: Replace with your actual Google Client ID or use the .env variable
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "716385579483-bm2b7qi45fdd86gdlfgis6i8k2r5ah9b.apps.googleusercontent.com";
 
 const App = () => (
   <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>

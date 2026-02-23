@@ -15,7 +15,7 @@ cd "$(dirname "$0")"
 # Prüfe ob Virtual Environment existiert
 if [ ! -d ".venv" ]; then
     echo -e "${YELLOW}⚠️  Virtual Environment nicht gefunden. Erstelle...${NC}"
-    python3 -m venv .venv
+    python3.11 -m venv .venv
     echo -e "${GREEN}✓ Virtual Environment erstellt${NC}"
 fi
 

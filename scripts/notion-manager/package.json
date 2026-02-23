@@ -1,0 +1,13 @@
+{
+    "name": "notion-manager",
+    "version": "1.0.0",
+    "type": "module",
+    "dependencies": {
+        "@notionhq/client": "^2.2.14",
+        "dotenv": "^16.4.5"
+    },
+    "devDependencies": {
+        "ts-node": "^10.9.2",
+        "typescript": "^5.3.3"
+    }
+}

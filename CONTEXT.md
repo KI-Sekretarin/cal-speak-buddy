@@ -35,3 +35,16 @@ This document is designed to provide rapid context to **AI Agent Managers** and 
     *   `SETUP_GUIDE.md`: For detailed installation steps.
     *   `INFRASTRUCTURE.md`: For deep dive into data flow.
     *   `FEATURES.md`: For a list of user-facing features.
+
+## 🤖 AI / Agent Capabilities
+
+### Supabase MCP Server
+To allow agents to directly interact with the Supabase database (Postgres), use the following Model Context Protocol (MCP) server configuration.
+
+**SSE URL**: `https://mcp.supabase.com/mcp?project_ref=bqwfcixtbnodxuoixxkk&features=docs%2Caccount%2Cdatabase%2Cdebugging%2Cdevelopment%2Cfunctions%2Cbranching%2Cstorage`
+
+**Usage**:
+In environments supporting MCP (like Cursor or Claude Desktop), add this as an SSE server. This allows the AI to:
+- Inspect database schemas.
+- Run SQL queries directly.
+- Manage Edge Functions.
