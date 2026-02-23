@@ -16,8 +16,11 @@ Before you begin, ensure you have the following installed:
         ollama pull qwen2.5:14b
         ```
     *   *Note: Ensure Ollama is running in the background.*
-4.  **Supabase** (Optional/Remote)
-    *   The project is configured to use a remote Supabase instance. Ensure you have the `.env` file with the correct credentials.
+4.  **Supabase & Environment Variables**
+    *   The project uses a remote Supabase backend and Google Calendar integration.
+    *   Copy `.env.example` to `.env` in the root directory OR the `services/ollama-worker` directory.
+    *   Fill in `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` (or `VITE_SUPABASE_ANON_KEY` for frontend).
+    *   Ensure `credentials.json` is placed in `services/whisper-server/` for Calendar features.
 
 ## 🛠️ Installation
 

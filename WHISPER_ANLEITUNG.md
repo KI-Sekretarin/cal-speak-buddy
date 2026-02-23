@@ -97,14 +97,14 @@ taskkill /PID <PID> /F
 ## 📝 Workflow
 
 ```
-Aufnahme → Transkription (lokal) → Bearbeiten → An n8n senden
+Aufnahme → Transkription (lokal) → Bearbeiten → An KI-Worker senden
 ```
 
 Der komplette Workflow:
 1. **Aufnehmen**: Mikrofon-Button drücken
 2. **Transkribieren**: Lokaler Whisper-Server verarbeitet Audio
 3. **Bearbeiten**: Optional Text anpassen
-4. **Senden**: An n8n Webhook für weitere Verarbeitung
+4. **Senden**: Text wird in die Supabase Datenbank (`inquiries`) gespeichert, woraufhin der lokale **Ollama Worker** die Anfrage kategorisiert und weiterverarbeitet.
 
 ---
 

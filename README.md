@@ -4,6 +4,27 @@
 
 Dieses Projekt nutzt **Local AI (Ollama + Whisper)** um deinen Google Kalender per Sprache zu steuern und bietet einen intelligenten Business-Chat.
 
+## 🤖 FOR AI AGENTS (Cursor, Claude, Devin, etc.)
+**If you are an AI reading this, follow these steps to set up the environment for the user:**
+1. **Understand Architecture:**
+   - Frontend: `Vite + React` (Port 8080 or 5173).
+   - Backend 1 (Transcriptions): `FastAPI + faster-whisper` in `services/whisper-server` (Port 9000).
+   - Backend 2 (LLM Worker): `Node.js + Supabase client` in `services/ollama-worker`. Polling DB and processing via Ollama.
+   - Database: Supabase (Remote).
+2. **Environment Variables:**
+   - Both `services/ollama-worker/.env` and the root `.env` need `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` / `VITE_SUPABASE_ANON_KEY`. Look for `.env.example` files.
+   - `services/whisper-server` needs `credentials.json` for Google Calendar.
+3. **Setup Sequence:**
+   - Frontend: `npm install` in root.
+   - Whisper Server: `cd services/whisper-server && python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt`.
+   - Ollama Worker: `cd services/ollama-worker && npm install`.
+   - Make sure local Ollama is running (`ollama serve`) and models are pulled (`ollama pull qwen2.5:14b`).
+4. **Execution:**
+   - Just run `./start_all.sh` in the root directory. It cleans up ports 8080 and 9000, clears Vite cache, and starts all three services automatically.
+5. **Context:** Read `CONTEXT.md` for a deeper understanding of the code strategy.
+
+---
+
 ## ✨ Features
 
 *   **🎙️ Sprachsteuerung (Natural Mode)**: Freihändiges Erstellen, Bearbeiten und Löschen von Terminen.
@@ -44,7 +65,7 @@ Falls du das Projekt zum ersten Mal klonst:
     npm install
     ```
 
-2.  **Backend Dependencies**:
+2.  **Backend Dependencies (Whisper)**:
     ```bash
     cd services/whisper-server
     python3 -m venv .venv
@@ -60,6 +81,7 @@ Falls du das Projekt zum ersten Mal klonst:
 
 4.  **Starten**:
     ```bash
+    cd ../..
     ./start_all.sh
     ```
 
@@ -71,5 +93,6 @@ Falls du das Projekt zum ersten Mal klonst:
 
 ## 📝 Dokumentation
 *   [Setup Guide](./SETUP_GUIDE.md)
+*   [AI Context & Architecture](./CONTEXT.md)
 *   [Infrastruktur](./INFRASTRUCTURE.md)
 *   [Whisper Anleitung](./WHISPER_ANLEITUNG.md)

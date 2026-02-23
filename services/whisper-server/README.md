@@ -163,7 +163,7 @@ docker build -t whisper-server .
 docker run --rm -p 9000:9000 -e WHISPER_MODEL=base whisper-server
 ```
 
-## 🎉 Vorteile gegenüber n8n
+## 🎉 Vorteile gegenüber Cloud-Lösungen (OpenAI Whisper API, etc.)
 
 ✅ **Schneller**: Keine Netzwerk-Latenz, lokale Verarbeitung  
 ✅ **Privat**: Audio verlässt nie deinen Computer  
