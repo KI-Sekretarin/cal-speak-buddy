@@ -24,7 +24,7 @@ This document is designed to provide rapid context to **AI Agent Managers** and 
 
 ## 🔑 Key Features for Agents to Know
 
-1.  **Ticket System**: The core logic revolves around "Tickets" (inquiries). Agents should look at `src/components/dashboard` to understand how these are visualized.
+1.  **Ticket System**: The core logic revolves around "Tickets" (inquiries). Agents should look at `src/components/dashboard` to understand how these are visualized. Additionally, the local LLM running in `services/ollama-worker` acts as an agent that can dynamically guide users in the chat to collect their email and issue description in order to automatically create these tickets.
 2.  **Voice Command**: Implemented via `Whisper`. The frontend records audio, sends it to `localhost:9000`, receiving text back.
 3.  **RAG / Knowledge**: The system uses a company profile (in Supabase) to generate context-aware answers.
 

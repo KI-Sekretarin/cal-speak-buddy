@@ -17,6 +17,7 @@ Dies ist eine detaillierte Zusammenstellung aller Features, die das Cal-Speak-Bu
 ### 3. Smart Chatbot (Widget)
 - **Echtzeit-Support**: Ein integrierbarer Chat-Widget für die Webseite.
 - **Unternehmenswissen**: Der Bot beantwortet Fragen zu Produkten, Preisen und Öffnungszeiten basierend auf der Knowledge Base.
+- **Automatisierte Ticket-Erstellung**: Der Bot kann den Nutzer interaktiv nach seiner E-Mail-Adresse sowie seinem Anliegen fragen und daraus eigenständig direkt ein Support-Ticket im Dashboard anlegen. Ein interaktives, animiertes Bestätigungs-Kärtchen signalisiert dem Nutzer den Erfolg.
 - **Eskalations-Management**: Erkennt der Bot komplexe oder emotionale Anfragen, markiert er diese zur menschlichen Übernahme („Escalate to Human“).
 
 ### 4. Sprachsteuerung (Cal-Speak-Buddy)

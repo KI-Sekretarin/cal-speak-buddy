@@ -344,6 +344,7 @@ async function generateChatResponse(message: string, profile: any, history: stri
     const prompt = `
 You are a helpful AI assistant for "${companyName}".
 Your goal is to answer the customer's question based on the company context.
+You can also help customers create support tickets.
 
 === CONTEXT ===
 Description: ${description}
@@ -369,6 +370,15 @@ User: ${message}
 - If you don't know, say you will check internally or ask for contact details.
 - Keep it concise (chat style).
 - Do NOT include "Assistant:" prefix.
+
+- **TICKET CREATION**: If the user wants to create a ticket, report a problem, or submit a request:
+  1. If user has NOT yet provided an email address in the conversation, ask for their email. Set "action": "collect_email".
+  2. If user HAS provided an email (look in history!) but has NOT described their issue/subject, ask them to describe it. Set "action": "collect_details".
+  3. If user has provided BOTH email AND a description/subject, create the ticket. Set "action": "create_ticket" and fill "ticket_data".
+  - Look at the ENTIRE conversation history to find already-provided email and details. Do NOT re-ask for information already given!
+  - An email looks like: something@something.something
+  - For the ticket subject, create a short summary (max 10 words) from the user's description.
+
 - **ESCALATION**: Set "escalate": true if:
   - You cannot answer the question.
   - The user asks to speak to a human.
@@ -379,8 +389,17 @@ User: ${message}
 Return valid JSON ONLY:
 {
   "response": "Your text response here",
-  "escalate": true/false
+  "escalate": true/false,
+  "action": "none" | "collect_email" | "collect_details" | "create_ticket",
+  "ticket_data": {
+    "email": "user@example.com",
+    "name": "Name if provided or empty string",
+    "subject": "Short ticket subject",
+    "message": "Full description of the issue"
+  }
 }
+
+IMPORTANT: "action" defaults to "none" for normal responses. Only use "create_ticket" when you have ALL the data (email + description). "ticket_data" is only required when action is "create_ticket".
 `;
 
     try {
@@ -434,6 +453,60 @@ async function ensureChatInquiry(sessionId: string, userId: string, firstMessage
     });
 }
 
+async function createTicketFromChat(
+    sessionId: string,
+    userId: string,
+    ticketData: { email: string; name: string; subject: string; message: string }
+) {
+    console.log(`Creating ticket from chat for session ${sessionId}`);
+    console.log(`  Email: ${ticketData.email}, Subject: ${ticketData.subject}`);
+
+    // 1. Update the chat_session with visitor info
+    await supabase
+        .from('chat_sessions')
+        .update({
+            visitor_email: ticketData.email,
+            visitor_name: ticketData.name || null
+        })
+        .eq('id', sessionId);
+
+    // 2. Check if a ticket already exists for this session
+    const { data: existing } = await supabase
+        .from('inquiries')
+        .select('id')
+        .eq('chat_session_id', sessionId)
+        .single();
+
+    if (existing) {
+        console.log(`Ticket already exists for session ${sessionId}, skipping.`);
+        return existing.id;
+    }
+
+    // 3. Create the inquiry (ticket)
+    const { data: inquiry, error } = await supabase
+        .from('inquiries')
+        .insert({
+            user_id: userId,
+            name: ticketData.name || 'Chat-Besucher',
+            email: ticketData.email,
+            subject: ticketData.subject,
+            message: ticketData.message,
+            source: 'chat',
+            chat_session_id: sessionId,
+            status: 'open'
+        })
+        .select('id')
+        .single();
+
+    if (error) {
+        console.error('Failed to create ticket from chat:', error);
+        return null;
+    }
+
+    console.log(`Ticket created: ${inquiry.id}`);
+    return inquiry.id;
+}
+
 async function processChatMessages() {
     // 1. Find unprocessed user messages
     const { data: messages, error } = await supabase
@@ -454,19 +527,16 @@ async function processChatMessages() {
         const userId = msg.chat_sessions?.user_id;
         if (!userId) continue;
 
-        // Ensure ticket exists
-        // await ensureChatInquiry(msg.session_id, userId, msg.content); // Removed: Conditional now
-
         const profile = await fetchProfile(userId);
 
-        // Get conversation history (last 5 messages)
+        // Get conversation history (last 10 messages for better ticket context)
         const { data: history } = await supabase
             .from('chat_messages')
             .select('sender, content')
             .eq('session_id', msg.session_id)
             .lt('created_at', msg.created_at)
             .order('created_at', { ascending: false })
-            .limit(5);
+            .limit(10);
 
         const historyText = history ? history.reverse().map((h: any) => `${h.sender === 'user' ? 'User' : 'Assistant'}: ${h.content}`).join('\n') : '';
 
@@ -474,16 +544,50 @@ async function processChatMessages() {
         const result = await generateChatResponse(msg.content, profile, historyText);
 
         if (result && result.response) {
-            await supabase.from('chat_messages').insert({
-                session_id: msg.session_id,
-                sender: 'bot',
-                content: result.response
-            });
+            // Check if AI wants to create a ticket
+            if (result.action === 'create_ticket' && result.ticket_data) {
+                console.log(`AI triggered ticket creation for session ${msg.session_id}`);
+                const ticketId = await createTicketFromChat(
+                    msg.session_id,
+                    userId,
+                    result.ticket_data
+                );
 
-            // Check for escalation
-            if (result.escalate) {
-                console.log(`Escalating chat session ${msg.session_id} to ticket.`);
-                await ensureChatInquiry(msg.session_id, userId, msg.content);
+                if (ticketId) {
+                    // Send confirmation message with metadata for beautiful card rendering
+                    await supabase.from('chat_messages').insert({
+                        session_id: msg.session_id,
+                        sender: 'bot',
+                        content: result.response,
+                        metadata: {
+                            action: 'ticket_created',
+                            ticket_id: ticketId,
+                            ticket_subject: result.ticket_data.subject,
+                            ticket_email: result.ticket_data.email,
+                            ticket_status: 'open'
+                        }
+                    });
+                } else {
+                    // Ticket creation failed, send regular response
+                    await supabase.from('chat_messages').insert({
+                        session_id: msg.session_id,
+                        sender: 'bot',
+                        content: 'Es tut mir leid, beim Erstellen des Tickets ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.'
+                    });
+                }
+            } else {
+                // Regular response (or collect_email / collect_details — just show the text)
+                await supabase.from('chat_messages').insert({
+                    session_id: msg.session_id,
+                    sender: 'bot',
+                    content: result.response
+                });
+
+                // Check for escalation
+                if (result.escalate) {
+                    console.log(`Escalating chat session ${msg.session_id} to ticket.`);
+                    await ensureChatInquiry(msg.session_id, userId, msg.content);
+                }
             }
         }
     }

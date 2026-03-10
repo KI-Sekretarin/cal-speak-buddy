@@ -108,20 +108,34 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Keine E-Mail-Adresse gefunden");
     }
 
-    // Verify user owns this inquiry
+    // Check authorization: user must be either the inquiry owner OR an employee of the owner
+    let profileUserId = user.id; // Default: use the authenticated user's profile for branding
+
     if (inquiry.user_id !== user.id) {
-      console.error("User does not own inquiry");
-      return new Response(
-        JSON.stringify({ error: "Zugriff verweigert" }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      // Check if the user is an employee of the inquiry owner
+      const { data: employeeProfile, error: empError } = await supabaseClient
+        .from("employee_profiles")
+        .select("employer_id")
+        .eq("id", user.id)
+        .single();
+
+      if (empError || !employeeProfile || employeeProfile.employer_id !== inquiry.user_id) {
+        console.error("User is neither owner nor employee of inquiry owner");
+        return new Response(
+          JSON.stringify({ error: "Zugriff verweigert" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Use the employer's profile for branding
+      profileUserId = employeeProfile.employer_id;
     }
 
-    // Fetch user profile for company details
+    // Fetch user profile for company details (use employer's profile for branding)
     const { data: profile } = await supabaseClient
       .from("profiles")
       .select("*")
-      .eq("id", user.id)
+      .eq("id", profileUserId)
       .single();
 
     console.log(`Sending email to ${inquiry.email} for inquiry ${inquiry.id}`);

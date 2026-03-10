@@ -52,7 +52,7 @@ echo "💻 Starting Frontend..."
 # For "npm run dev", it's best to run in a separate terminal OR run here and wait.
 # Since we are an agent, we run in background and give control back.
 
-npm run dev &
+npm run dev -- --port 8080 &
 FRONTEND_PID=$!
 
 echo -e "${GREEN}✅ All services started!${NC}"

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Send, User, Bot, Loader2, Paperclip, Smile, MoreVertical, X, Globe } from 'lucide-react';
+import { Send, User, Bot, Loader2, Paperclip, Smile, MoreVertical, X, Globe, Ticket, CircleCheck, Mail, Tag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -13,11 +13,120 @@ import useSound from 'use-sound';
 // Simple pop sound
 const popSound = 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3';
 
+interface MessageMetadata {
+    action?: string;
+    ticket_id?: string;
+    ticket_subject?: string;
+    ticket_email?: string;
+    ticket_status?: string;
+}
+
 interface Message {
     id: string;
     content: string;
     sender: 'user' | 'bot' | 'agent';
     created_at: string;
+    metadata?: MessageMetadata;
+}
+
+// ── Ticket Created Card ─────────────────────────────────────────────────
+function TicketCreatedCard({ metadata, primaryColor }: { metadata: MessageMetadata; primaryColor: string }) {
+    return (
+        <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+            className="w-full max-w-[320px]"
+        >
+            <div
+                className="relative overflow-hidden rounded-2xl border shadow-lg"
+                style={{
+                    background: 'linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(248,250,252,0.95) 100%)',
+                    borderColor: `${primaryColor}30`
+                }}
+            >
+                {/* Gradient top bar */}
+                <div
+                    className="h-1.5 w-full"
+                    style={{ background: `linear-gradient(90deg, ${primaryColor}, ${primaryColor}88, ${primaryColor}44)` }}
+                />
+
+                <div className="p-4 space-y-3">
+                    {/* Header with animated check */}
+                    <div className="flex items-center gap-3">
+                        <motion.div
+                            initial={{ scale: 0, rotate: -180 }}
+                            animate={{ scale: 1, rotate: 0 }}
+                            transition={{ type: 'spring', stiffness: 300, damping: 15, delay: 0.2 }}
+                            className="flex items-center justify-center w-10 h-10 rounded-full"
+                            style={{ background: `${primaryColor}15` }}
+                        >
+                            <CircleCheck className="w-6 h-6" style={{ color: primaryColor }} />
+                        </motion.div>
+                        <div>
+                            <motion.p
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.3 }}
+                                className="font-semibold text-sm text-slate-800"
+                            >
+                                Ticket erstellt!
+                            </motion.p>
+                            <motion.p
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.4 }}
+                                className="text-[11px] text-slate-400"
+                            >
+                                Wir kümmern uns darum
+                            </motion.p>
+                        </div>
+                    </div>
+
+                    {/* Ticket Details */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.5 }}
+                        className="space-y-2 pt-1"
+                    >
+                        {metadata.ticket_subject && (
+                            <div className="flex items-start gap-2">
+                                <Ticket className="w-3.5 h-3.5 text-slate-400 mt-0.5 shrink-0" />
+                                <span className="text-xs text-slate-600 leading-snug">{metadata.ticket_subject}</span>
+                            </div>
+                        )}
+                        {metadata.ticket_email && (
+                            <div className="flex items-center gap-2">
+                                <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                <span className="text-xs text-slate-500 font-mono">{metadata.ticket_email}</span>
+                            </div>
+                        )}
+                    </motion.div>
+
+                    {/* Status Badge */}
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.6, type: 'spring' }}
+                        className="flex items-center gap-2 pt-1"
+                    >
+                        <span
+                            className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-full"
+                            style={{
+                                background: `${primaryColor}12`,
+                                color: primaryColor,
+                                border: `1px solid ${primaryColor}25`
+                            }}
+                        >
+                            <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: primaryColor }} />
+                            Offen
+                        </span>
+                    </motion.div>
+                </div>
+            </div>
+        </motion.div>
+    );
 }
 
 interface ChatWidgetProps {
@@ -305,7 +414,15 @@ export default function ChatWidget({
                                                     style={isUser ? { backgroundColor: primaryColor } : {}}
                                                 >
                                                     <div className={`prose prose-sm max-w-none ${isUser ? 'prose-invert' : ''}`}>
-                                                        <ReactMarkdown>{msg.content}</ReactMarkdown>
+                                                        {/* Ticket Created Card */}
+                                                        {!isUser && msg.metadata?.action === 'ticket_created' ? (
+                                                            <div className="space-y-2">
+                                                                <ReactMarkdown>{msg.content}</ReactMarkdown>
+                                                                <TicketCreatedCard metadata={msg.metadata} primaryColor={primaryColor} />
+                                                            </div>
+                                                        ) : (
+                                                            <ReactMarkdown>{msg.content}</ReactMarkdown>
+                                                        )}
                                                     </div>
                                                 </div>
                                                 {/* Timestamp on hover */}
