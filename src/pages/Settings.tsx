@@ -9,9 +9,8 @@ import { ChatSettingsTab } from '@/components/settings/ChatSettingsTab';
 import { ProductsTab } from '@/components/settings/ProductsTab';
 import { ProfilePreviewTab } from '@/components/settings/ProfilePreviewTab';
 import { CompanyProfile } from '@/types/profile';
-import { Save, Loader2, Globe } from 'lucide-react';
+import { Save, Loader2 } from 'lucide-react';
 import { SettingsSidebar } from '@/components/settings/SettingsSidebar';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
@@ -172,57 +171,7 @@ export default function Settings() {
 
           {/* Main Content Area */}
           <main className="flex-1 min-w-0 w-full space-y-6">
-            <Card className="overflow-hidden border-2 border-primary/10 shadow-lg mb-6">
-              <CardHeader className="bg-primary/5 pb-4">
-                <CardTitle className="text-sm font-medium flex items-center gap-2">
-                  <Globe className="h-4 w-4 text-primary" />
-                  Live Branding Vorschau
-                </CardTitle>
-                <CardDescription className="text-xs">
-                  So sehen Kunden Ihr Unternehmen.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-6">
-                <div className="flex items-center gap-6">
-                  <div className="h-20 w-20 rounded-2xl bg-muted flex items-center justify-center overflow-hidden border-2 border-dashed border-muted-foreground/20">
-                    {(localProfile?.logo_url || profile?.logo_url) ? (
-                      <img
-                        src={localProfile?.logo_url || profile?.logo_url || ''}
-                        alt="Logo Preview"
-                        className="h-full w-full object-contain"
-                      />
-                    ) : (
-                      <div className="text-[10px] text-muted-foreground text-center px-1">Kein Logo</div>
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-xl font-bold text-foreground">
-                      {localProfile?.company_name || profile?.company_name || 'Ihr Firmenname'}
-                    </h3>
-                    <p className="text-sm text-muted-foreground line-clamp-1">
-                      {localProfile?.industry || profile?.industry || 'Branche'} • {localProfile?.city || profile?.city || 'Standort'}
-                    </p>
-                    <div className="flex gap-2 mt-3">
-                      <div
-                        className="h-6 w-12 rounded-full border shadow-sm"
-                        style={{ backgroundColor: (localProfile?.brand_colors as any)?.primary || (profile?.brand_colors as any)?.primary || '#3b82f6' }}
-                        title="Primärfarbe"
-                      />
-                      <div
-                        className="h-6 w-12 rounded-full border shadow-sm"
-                        style={{ backgroundColor: (localProfile?.brand_colors as any)?.secondary || (profile?.brand_colors as any)?.secondary || '#10b981' }}
-                        title="Sekundärfarbe"
-                      />
-                    </div>
-                  </div>
-                  <div className="hidden sm:block">
-                    <div className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-bold shadow-sm">
-                      Beispiel Button
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+
 
             {renderContent()}
           </main>

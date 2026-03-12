@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import dotenv from 'dotenv';
+import * as dotenv from 'dotenv';
 import fetch from 'node-fetch'; // Built-in in Node 18+, but good to be explicit or use globalThis.fetch
 
 dotenv.config();
