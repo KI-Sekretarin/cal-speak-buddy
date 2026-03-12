@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Send, User, Bot, Loader2, Paperclip, Smile, MoreVertical, X, Globe, Ticket, CircleCheck, Mail, Tag } from 'lucide-react';
+import { Send, User, Bot, Loader2, X, Globe, Ticket, CircleCheck, Mail, Tag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -327,9 +327,6 @@ export default function ChatWidget({
                             Zum Kontaktformular
                         </Button>
                     )}
-                    <Button variant="ghost" size="icon" className="text-white hover:bg-white/20 rounded-full h-8 w-8">
-                        <MoreVertical className="w-4 h-4" />
-                    </Button>
                 </div>
             </div>
 
@@ -483,27 +480,16 @@ export default function ChatWidget({
                         }}
                         className="flex gap-2 items-end"
                     >
-                        <Button type="button" variant="ghost" size="icon" className="text-muted-foreground hover:text-primary rounded-full shrink-0">
-                            <Paperclip className="w-5 h-5" />
-                        </Button>
-                        <div className="flex-1 relative">
+                        <div className="flex-1">
                             <Textarea
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
                                 onKeyDown={handleKeyDown}
                                 placeholder="Nachricht schreiben..."
                                 disabled={loading || !sessionId}
-                                className="min-h-[44px] max-h-[120px] resize-none rounded-2xl border-slate-200 focus:ring-primary/20 focus:border-primary pr-10 py-3 shadow-sm bg-slate-50 focus:bg-white transition-all"
+                                className="min-h-[44px] max-h-[120px] resize-none rounded-2xl border-slate-200 focus:ring-primary/20 focus:border-primary py-3 shadow-sm bg-slate-50 focus:bg-white transition-all"
                                 rows={1}
                             />
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="absolute right-1 top-1 text-muted-foreground hover:text-primary rounded-full h-8 w-8"
-                            >
-                                <Smile className="w-5 h-5" />
-                            </Button>
                         </div>
                         <Button
                             type="submit"

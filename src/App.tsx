@@ -2,7 +2,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { AnimatePresence } from "framer-motion";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { VoiceProvider } from "@/contexts/VoiceContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -31,6 +32,36 @@ const queryClient = new QueryClient();
 // TODO: Replace with your actual Google Client ID or use the .env variable
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "716385579483-bm2b7qi45fdd86gdlfgis6i8k2r5ah9b.apps.googleusercontent.com";
 
+const AnimatedRoutes = () => {
+  const location = useLocation();
+
+  return (
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.pathname}>
+        <Route path="/" element={<Index />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/split-password" element={<UpdatePassword />} /> {/* Fixed name or keep it? */}
+        <Route path="/update-password" element={<UpdatePassword />} />
+        <Route path="/contact" element={<Contact />} />
+        <Route path="/contact/:slug" element={<PublicContactForm />} />
+        <Route path="/c/:slug" element={<PublicChat />} />
+        <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
+        <Route path="/voice-commands" element={<ProtectedRoute><VoiceCommands /></ProtectedRoute>} />
+        <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
+        <Route path="/meetings" element={<ProtectedRoute><Meetings /></ProtectedRoute>} />
+        <Route path="/kiosk" element={<ProtectedRoute><Kiosk /></ProtectedRoute>} />
+        <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+        <Route path="/help" element={<ProtectedRoute><Help /></ProtectedRoute>} />
+        <Route path="/employees" element={<ProtectedRoute><Employees /></ProtectedRoute>} />
+        <Route path="/employee-dashboard" element={<ProtectedRoute><EmployeeDashboard /></ProtectedRoute>} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </AnimatePresence>
+  );
+};
+
 const App = () => (
   <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
     <QueryClientProvider client={queryClient}>
@@ -40,27 +71,7 @@ const App = () => (
         <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <AuthProvider>
             <VoiceProvider>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/forgot-password" element={<ForgotPassword />} />
-                <Route path="/update-password" element={<UpdatePassword />} />
-                <Route path="/contact" element={<Contact />} />
-                <Route path="/contact/:slug" element={<PublicContactForm />} />
-                <Route path="/c/:slug" element={<PublicChat />} />
-                <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
-                <Route path="/voice-commands" element={<ProtectedRoute><VoiceCommands /></ProtectedRoute>} />
-                <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
-                <Route path="/meetings" element={<ProtectedRoute><Meetings /></ProtectedRoute>} />
-                <Route path="/kiosk" element={<ProtectedRoute><Kiosk /></ProtectedRoute>} />
-                <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-                <Route path="/help" element={<ProtectedRoute><Help /></ProtectedRoute>} />
-                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                <Route path="*" element={<NotFound />} />
-                <Route path="/employees" element={<ProtectedRoute><Employees /></ProtectedRoute>} />
-                <Route path="/employee-dashboard" element={<ProtectedRoute><EmployeeDashboard /></ProtectedRoute>} />
-              </Routes>
+              <AnimatedRoutes />
             </VoiceProvider>
           </AuthProvider>
         </BrowserRouter>

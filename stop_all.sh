@@ -5,12 +5,11 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 NC='\033[0m' # No Color
 
-echo -e "${RED}🛑 Stopping all CalSpeakBuddy services...${NC}"
+echo -e "${RED}🛑 Stopping all Cal-Speak-Buddy services...${NC}"
 
 # Function to kill process on port
 kill_port() {
     local port=$1
-    echo "Checking port $port..."
     local pid=$(lsof -ti:$port)
     if [ ! -z "$pid" ]; then
         echo -e "${RED}Killing process $pid on port $port...${NC}"
@@ -20,19 +19,17 @@ kill_port() {
     fi
 }
 
-# 1. Stop Frontend (Port 8080)
-kill_port 8080
+# 1. Stop Frontend (Port 5173)
+kill_port 5173
 
 # 2. Stop Whisper Server (Port 9000)
 kill_port 9000
 
 # 3. Stop Ollama Worker (Process name search)
 echo "Checking for Ollama Worker..."
-# We look for the node process running the worker index.ts
-pkill -f "ts-node index.ts" && echo -e "${RED}Killed Ollama Worker process.${NC}" || echo -e "${GREEN}No Ollama Worker found.${NC}"
+# We look for the node/tsx process running the worker
+pkill -f "tsx index.ts" && echo -e "${RED}Killed Ollama Worker process.${NC}" || echo -e "${GREEN}No Ollama Worker found.${NC}"
+pkill -f "node index.ts" && echo -e "${RED}Killed Ollama Worker process.${NC}"
 
-# 4. Stop Ollama (Optional - usually system wide, but we effectively stop the project usage)
-# Uncomment the next line if you want to stop the Ollama server itself
-# pkill ollama
-
+# 4. Cleanup
 echo -e "${GREEN}✅ All project services stopped.${NC}"

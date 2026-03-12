@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Send, Share2 } from 'lucide-react';
+import { Send, Share2, MessageSquare } from 'lucide-react';
 
 export default function Chat() {
   const [sessions, setSessions] = useState<any[]>([]);
@@ -92,8 +92,13 @@ export default function Chat() {
     };
   }, [selectedSession]);
 
+  const lastTypingRef = useRef<number>(0);
+
   const handleTyping = async () => {
     if (!selectedSession) return;
+    const now = Date.now();
+    if (now - lastTypingRef.current < 1000) return;
+    lastTypingRef.current = now;
 
     await supabase.channel(`chat:${selectedSession}`).send({
       type: 'broadcast',
@@ -127,7 +132,12 @@ export default function Chat() {
           <CardContent className="flex-1 p-0 overflow-hidden">
             <ScrollArea className="h-full">
               {sessions.length === 0 && (
-                <div className="p-4 text-center text-muted-foreground">Keine aktiven Chats</div>
+                <div className="flex flex-col items-center justify-center p-8 text-center space-y-3">
+                  <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
+                    <MessageSquare className="h-6 w-6 text-muted-foreground/40" />
+                  </div>
+                  <p className="text-sm text-muted-foreground">Keine aktiven Chats</p>
+                </div>
               )}
               {sessions.map(session => (
                 <div
@@ -218,8 +228,16 @@ export default function Chat() {
               </CardContent>
             </>
           ) : (
-            <div className="flex-1 flex items-center justify-center text-muted-foreground">
-              Wähle einen Chat aus
+            <div className="flex-1 flex flex-col items-center justify-center text-center p-12 space-y-4">
+              <div className="h-20 w-20 rounded-full bg-primary/5 flex items-center justify-center mb-2">
+                <MessageSquare className="h-10 w-10 text-primary/30" />
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold">Willkommen im Chat-Backend</h3>
+                <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+                  Wählen Sie eine Unterhaltung aus der Liste links aus, um mit Kunden oder der KI zu interagieren.
+                </p>
+              </div>
             </div>
           )}
         </Card>

@@ -1,8 +1,8 @@
 import { ReactNode, useState } from 'react';
+import { motion } from 'framer-motion';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,9 +23,6 @@ import {
   X,
   User,
   LogOut,
-  Search,
-  Sun,
-  Moon,
   Home,
 } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
@@ -75,17 +72,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             <span className="hidden sm:inline">Call-Speak-Buddy</span>
           </Link>
 
-          {/* Search Bar */}
-          <div className="flex-1 max-w-xl mx-auto hidden md:block">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Tickets, E-Mails, Kontakte durchsuchen..."
-                className="pl-10 w-full"
-              />
-            </div>
-          </div>
+          <div className="flex-1" />
 
           {/* Theme Toggle and User Menu */}
           <div className="flex items-center gap-2">
@@ -105,7 +92,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link to="/" className="cursor-pointer">
+                  <Link to="/" state={{ fromDashboard: true }} className="cursor-pointer">
                     <Home className="mr-2 h-4 w-4" />
                     Zur Landing Page
                   </Link>
@@ -193,9 +180,16 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
         {/* Main content */}
         <main className="flex-1 overflow-auto">
-          <div className="container mx-auto p-6 max-w-7xl">
+          <motion.div
+            key={location.pathname}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="container mx-auto p-6 max-w-7xl"
+          >
             {children}
-          </div>
+          </motion.div>
         </main>
       </div>
       <WalkthroughOverlay />

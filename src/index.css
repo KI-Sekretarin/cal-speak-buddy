@@ -173,8 +173,25 @@ All colors MUST be HSL.
   }
 
   /* Smooth transitions for all interactive elements */
-  button, input, textarea, select {
+  button, input, textarea, select, a {
     transition: var(--transition-smooth);
+  }
+
+  button:active {
+    transform: scale(0.96);
+  }
+
+  .page-transition-wrapper {
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Premium glassmorphism utility */
+  .glass-card {
+    background: hsl(var(--card) / 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid hsl(var(--border) / 0.5);
   }
 
   /* Custom scrollbars */

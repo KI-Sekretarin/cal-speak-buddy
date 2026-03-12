@@ -21,42 +21,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     },
 });
 
-async function atomicClaimRows(limit: number = 1) {
-    const sql = `
-    WITH candidate AS (
-      SELECT id
-      FROM public.inquiries
-      WHERE ai_category IS NULL
-      ORDER BY created_at ASC
-      FOR UPDATE SKIP LOCKED
-      LIMIT ${limit}
-    )
-    UPDATE public.inquiries q
-    SET status = 'in_progress'
-    FROM candidate c
-    WHERE q.id = c.id
-    RETURNING q.*;
-  `;
-
-    try {
-        // Note: This requires a 'sql' RPC function in Supabase to execute raw SQL.
-        // If that doesn't exist, we might need a fallback or the user needs to create it.
-        // For now, we'll assume the user has it or we use a fallback.
-        const { data, error } = await supabase.rpc('sql', { q: sql });
-
-        if (error) {
-            // Fallback if RPC fails (e.g. function not found)
-            // console.warn('RPC atomic claim failed, trying fallback...', error.message);
-            return null;
-        }
-        return data;
-    } catch (e) {
-        console.error('Atomic claim error:', e);
-        return null;
-    }
-}
-
-async function fallbackClaimOne() {
+async function claimOneInquiry() {
     const { data: rows, error } = await supabase
         .from('inquiries')
         .select('*')
@@ -654,14 +619,10 @@ async function main() {
         try {
             // console.log('Checking for new inquiries...'); // Optional: uncomment for very verbose logs
 
-            // Try atomic claim first
-            let inquiries = await atomicClaimRows(1);
-
-            // If atomic failed or returned nothing (and we want to be sure), try fallback
-            if (!inquiries) {
-                const single = await fallbackClaimOne();
-                if (single) inquiries = [single];
-            }
+            // Try to claim one inquiry
+            let inquiries = null;
+            const single = await claimOneInquiry();
+            if (single) inquiries = [single];
 
             if (inquiries && inquiries.length > 0) {
                 for (const inquiry of inquiries) {

@@ -40,17 +40,19 @@ export default function EmployeeDashboard() {
     }, [user]);
 
     const fetchInquiries = useCallback(async () => {
+        if (!employeeProfile?.employer_id) return;
         setLoading(true);
         const { data, error } = await supabase
             .from("inquiries")
             .select("*")
+            .eq("user_id", employeeProfile.employer_id)
             .order("created_at", { ascending: false });
 
         if (!error && data) {
             setInquiries(data);
         }
         setLoading(false);
-    }, []);
+    }, [employeeProfile?.employer_id]);
 
     useEffect(() => {
         fetchEmployeeProfile();

@@ -27,9 +27,11 @@ Dieses Projekt nutzt **Local AI (Ollama + Whisper)** um deinen Google Kalender p
 
 ## ✨ Features
 
-*   **🎙️ Sprachsteuerung (Natural Mode)**: Freihändiges Erstellen, Bearbeiten und Löschen von Terminen.
+*   **🎙️ Sprachsteuerung (Natural Mode)**: Freihändiges Erstellen, Bearbeiten und Löschen von Terminen mit visuellem Audio-Analyzer.
 *   **🧠 Lokale Intelligenz**: Whisper (Speech-to-Text) und Llama/Qwen (Reasoning) laufen lokal (Datenschutz!).
 *   **💬 AI Business Chat & Support**: Chatte mit einer anpassbaren KI über deine Geschäftsdaten. Der Bot kann bei Bedarf **direkt im Chat Support-Tickets** für Kunden anlegen.
+*   **✨ Premium UX/UI**: Fluid Page Transitions (Framer Motion), Echtzeit-Branding-Vorschau in den Einstellungen und reaktive Micro-Interactions.
+*   **📱 PWA-Optimierung**: Als Web-App installierbar für verbesserte mobile Nutzung.
 *   **🏢 Firmenprofil**: Verwalte Geschäftsdetails und Produktkataloge für das KI-Wissen.
 *   **📅 Google Integration**: Sichere Verbindung zu Google Calendar.
 

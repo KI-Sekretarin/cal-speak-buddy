@@ -1,9 +1,9 @@
 import React, { useState, useRef } from 'react';
+import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Mic, Square } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 
 interface VoiceInterfaceProps {
   onVoiceCommand: (command: string) => void;
@@ -20,27 +20,10 @@ export const VoiceInterface: React.FC<VoiceInterfaceProps> = ({
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
 
-  const blobToBase64 = (blob: Blob) =>
-    new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const result = reader.result;
-        if (typeof result === 'string') {
-          const base64 = result.split(',')[1];
-          if (base64) {
-            resolve(base64);
-            return;
-          }
-        }
-        reject(new Error('Audio konnte nicht konvertiert werden'));
-      };
-      reader.onerror = () => reject(new Error('Audio konnte nicht gelesen werden'));
-      reader.readAsDataURL(blob);
-    });
 
   const startListening = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
+      const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           sampleRate: 16000,
           channelCount: 1,
@@ -48,11 +31,11 @@ export const VoiceInterface: React.FC<VoiceInterfaceProps> = ({
           noiseSuppression: true,
         }
       });
-      
+
       const mediaRecorder = new MediaRecorder(stream, {
         mimeType: 'audio/webm;codecs=opus'
       });
-      
+
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
 
@@ -65,7 +48,7 @@ export const VoiceInterface: React.FC<VoiceInterfaceProps> = ({
       mediaRecorder.onstop = async () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         await processAudio(audioBlob);
-        
+
         // Stop all audio tracks
         stream.getTracks().forEach(track => track.stop());
       };
@@ -98,19 +81,22 @@ export const VoiceInterface: React.FC<VoiceInterfaceProps> = ({
 
   const processAudio = async (audioBlob: Blob) => {
     try {
-      const base64Audio = await blobToBase64(audioBlob);
+      const formData = new FormData();
+      formData.append('file', audioBlob, 'recording.webm');
 
-      const { data, error } = await supabase.functions.invoke<{ text: string }>('speech-to-text', {
-        body: { audio: base64Audio },
+      const response = await fetch('http://localhost:9000/transcribe-file', {
+        method: 'POST',
+        body: formData,
       });
 
-      if (error) {
-        throw error;
+      if (!response.ok) {
+        throw new Error(`Whisper server error: ${response.status}`);
       }
 
+      const data = await response.json();
       const text = data?.text ?? '';
       setTranscript(text);
-    
+
       if (text.trim()) {
         onVoiceCommand(text);
         toast({
@@ -123,7 +109,7 @@ export const VoiceInterface: React.FC<VoiceInterfaceProps> = ({
       setTranscript('Fehler bei der Spracherkennung');
       toast({
         title: 'Verarbeitungsfehler',
-        description: 'Spracherkennung fehlgeschlagen',
+        description: 'Lokale Spracherkennung fehlgeschlagen. Ist der Whisper-Server gestartet?',
         variant: 'destructive',
       });
     }
@@ -139,29 +125,55 @@ export const VoiceInterface: React.FC<VoiceInterfaceProps> = ({
       </CardHeader>
 
       <CardContent className="pt-0 text-center">
-        <div className="flex justify-center mb-4">
-          {!isListening ? (
-            <Button
-              variant="voice"
-              size="voice-large"
-              onClick={startListening}
-              disabled={isProcessing}
-              aria-pressed={isListening}
-              aria-label="Sprachaufnahme starten"
-            >
-              <Mic className="h-6 w-6" />
-            </Button>
-          ) : (
-            <Button
-              variant="voice-listening"
-              size="voice-large"
-              onClick={stopListening}
-              aria-pressed={isListening}
-              aria-label="Sprachaufnahme stoppen"
-            >
-              <Square className="h-5 w-5" />
-            </Button>
-          )}
+        <div className="flex flex-col items-center justify-center space-y-6 mb-4">
+          <div className="relative">
+            {isListening && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="flex items-center gap-1 h-12">
+                  {[...Array(5)].map((_, i) => (
+                    <motion.div
+                      key={i}
+                      className="w-1.5 bg-primary rounded-full"
+                      animate={{
+                        height: [8, 32, 12, 40, 16, 24, 10][(i + Math.floor(Math.random() * 7)) % 7],
+                      }}
+                      transition={{
+                        duration: 0.5,
+                        repeat: Infinity,
+                        repeatType: "mirror",
+                        delay: i * 0.1,
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {!isListening ? (
+              <Button
+                variant="voice"
+                size="voice-large"
+                onClick={startListening}
+                disabled={isProcessing}
+                aria-pressed={isListening}
+                aria-label="Sprachaufnahme starten"
+                className="relative z-10"
+              >
+                <Mic className="h-6 w-6" />
+              </Button>
+            ) : (
+              <Button
+                variant="voice-listening"
+                size="voice-large"
+                onClick={stopListening}
+                aria-pressed={isListening}
+                aria-label="Sprachaufnahme stoppen"
+                className="relative z-10"
+              >
+                <Square className="h-5 w-5" />
+              </Button>
+            )}
+          </div>
         </div>
 
         <div className="mb-4">
@@ -169,8 +181,8 @@ export const VoiceInterface: React.FC<VoiceInterfaceProps> = ({
             {isListening
               ? 'Sprechen Sie jetzt...'
               : isProcessing
-              ? 'Verarbeite Befehl...'
-              : 'Bereit für Sprachbefehle'}
+                ? 'Verarbeite Befehl...'
+                : 'Bereit für Sprachbefehle'}
           </h4>
 
           <div

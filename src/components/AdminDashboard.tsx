@@ -182,8 +182,22 @@ export default function AdminDashboard({ onSelectInquiry }: { onSelectInquiry: (
         <TableBody>
           {filteredInquiries.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                Keine Anfragen in diesem Bereich
+              <TableCell colSpan={7} className="text-center py-20">
+                <div className="flex flex-col items-center justify-center space-y-4 max-w-sm mx-auto">
+                  <div className="h-16 w-16 rounded-full bg-primary/5 flex items-center justify-center mb-2">
+                    <Mail className="h-8 w-8 text-primary/40" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold">Keine Anfragen gefunden</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Es liegen aktuell keine Anfragen in diesem Bereich vor. Sobald Kunden das Kontaktformular nutzen, erscheinen sie hier.
+                    </p>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={loadData} className="gap-2">
+                    <RefreshCw className="h-4 w-4" />
+                    Aktualisieren
+                  </Button>
+                </div>
               </TableCell>
             </TableRow>
           ) : (
