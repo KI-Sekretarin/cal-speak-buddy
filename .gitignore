@@ -44,3 +44,11 @@ credentials.json
 token.json
 supabase/.temp
 vite.config.ts.timestamp-*
+
+# Claude Code local settings (machine-specific)
+.claude/settings.local.json
+.claude/worktrees/
+
+# Duplicate lock files
+"package-lock 2.json"
+package-lock\ 2.json
