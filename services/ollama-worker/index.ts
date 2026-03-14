@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import * as dotenv from 'dotenv';
-import fetch from 'node-fetch'; // Built-in in Node 18+, but good to be explicit or use globalThis.fetch
+import fetch from 'node-fetch';
 
 dotenv.config();
 
@@ -16,32 +16,89 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
 }
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-    auth: {
-        persistSession: false,
-    },
+    auth: { persistSession: false },
 });
 
-async function claimOneInquiry() {
+// --- Retry Helper ---
+async function withRetry<T>(fn: () => Promise<T>, retries = 3): Promise<T | null> {
+    for (let i = 0; i < retries; i++) {
+        try {
+            return await fn();
+        } catch (err) {
+            console.error(`Attempt ${i + 1}/${retries} failed:`, err);
+            if (i < retries - 1) {
+                await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 2000));
+            }
+        }
+    }
+    return null;
+}
+
+const STUCK_TIMEOUT_MS = 5 * 60 * 1000; // 5 Minuten
+const FAILED_RETRY_AFTER_MS = 10 * 60 * 1000; // 10 Minuten
+const BATCH_SIZE = 5;
+
+async function recoverStuckInquiries() {
+    const cutoff = new Date(Date.now() - STUCK_TIMEOUT_MS).toISOString();
+    const { data: stuck, error } = await supabase
+        .from('inquiries')
+        .select('id')
+        .is('ai_category', null)
+        .eq('status', 'in_progress')
+        .lt('updated_at', cutoff);
+
+    if (error || !stuck || stuck.length === 0) return;
+
+    console.log(`Recovering ${stuck.length} stuck inquiries...`);
+    const ids = stuck.map((s: any) => s.id);
+    await supabase
+        .from('inquiries')
+        .update({ status: 'open' })
+        .in('id', ids);
+}
+
+async function retryFailedInquiries() {
+    const cutoff = new Date(Date.now() - FAILED_RETRY_AFTER_MS).toISOString();
+    const { data: failed, error } = await supabase
+        .from('inquiries')
+        .select('id')
+        .is('ai_category', null)
+        .eq('status', 'failed')
+        .lt('updated_at', cutoff);
+
+    if (error || !failed || failed.length === 0) return;
+
+    console.log(`Retrying ${failed.length} previously failed inquiries...`);
+    const ids = failed.map((s: any) => s.id);
+    await supabase
+        .from('inquiries')
+        .update({ status: 'open' })
+        .in('id', ids);
+}
+
+async function claimInquiries(): Promise<any[]> {
     const { data: rows, error } = await supabase
         .from('inquiries')
         .select('*')
         .is('ai_category', null)
-        .neq('status', 'in_progress') // Try to avoid those already picked up
+        .eq('status', 'open')
         .order('created_at', { ascending: true })
-        .limit(1);
+        .limit(BATCH_SIZE);
 
-    if (error || !rows || rows.length === 0) return null;
+    if (error || !rows || rows.length === 0) return [];
 
-    const candidate = rows[0];
-    const { data: updated, error: updateError } = await supabase
+    const ids = rows.map((r: any) => r.id);
+    const { error: updateError } = await supabase
         .from('inquiries')
-        .update({ status: 'in_progress' })
-        .eq('id', candidate.id)
-        .select()
-        .single();
+        .update({ status: 'in_progress', updated_at: new Date().toISOString() })
+        .in('id', ids);
 
-    if (updateError) return null;
-    return updated;
+    if (updateError) {
+        console.error('Failed to claim inquiries:', updateError);
+        return [];
+    }
+
+    return rows;
 }
 
 async function fetchProfile(userId: string) {
@@ -58,50 +115,20 @@ async function fetchProfile(userId: string) {
     return data;
 }
 
-async function fetchEmployees(companyId: string, role: string) {
-    // Fetch employees for this company with matching role
-    // Also fetch their current open ticket count to estimate load
-    const { data: employees, error } = await supabase
-        .from('employee_profiles')
-        .select('id, full_name, skills, max_capacity')
-        .eq('employer_id', companyId)
-        .eq('role', role);
-
-    if (error || !employees) return [];
-
-    // For each employee, count "in_progress" or "open" tickets assigned to them
-    const employeesWithLoad = await Promise.all(employees.map(async (emp) => {
-        const { count } = await supabase
-            .from('inquiries')
-            .select('*', { count: 'exact', head: true })
-            .eq('assigned_to', emp.id)
-            .neq('status', 'closed');
-
-        return {
-            ...emp,
-            current_load: count || 0
-        };
-    }));
-
-    return employeesWithLoad;
-}
 
 async function analyzeInquiry(subject: string, message: string, profile: any) {
-    // 1. Basic Company Info
     const companyName = profile?.company_name || 'our company';
     const industry = profile?.industry || 'general';
     const description = profile?.company_description || '';
     const tone = profile?.preferred_tone || 'professional';
     const language = profile?.preferred_language || 'de';
 
-    // 2. Dynamic Categories
     let categories = ['appointment', 'general', 'urgent', 'spam', 'support', 'sales', 'billing', 'feedback'];
     if (profile?.inquiry_categories && Array.isArray(profile.inquiry_categories) && profile.inquiry_categories.length > 0) {
         categories = [...profile.inquiry_categories, 'spam'];
     }
     const categoriesList = categories.map(c => `'${c}'`).join(', ');
 
-    // 3. Contact & Location
     const contactInfo = [
         profile?.email ? `Email: ${profile.email}` : '',
         profile?.phone ? `Phone: ${profile.phone}` : '',
@@ -111,59 +138,50 @@ async function analyzeInquiry(subject: string, message: string, profile: any) {
         profile?.country ? `Country: ${profile.country}` : ''
     ].filter(Boolean).join('\n');
 
-    // 4. Operational Details
     const businessHours = profile?.business_hours ? JSON.stringify(profile.business_hours) : '';
-    const deliveryAreas = Array.isArray(profile?.delivery_areas) ? profile.delivery_areas.join(', ') : '';
-    const paymentMethods = Array.isArray(profile?.payment_methods) ? profile.payment_methods.join(', ') : '';
-
-    // 5. Company Identity & Values
     const values = Array.isArray(profile?.company_values) ? profile.company_values.join(', ') : '';
-    const usps = Array.isArray(profile?.unique_selling_points) ? profile.unique_selling_points.join(', ') : '';
-
-    const certifications = Array.isArray(profile?.certifications) ? profile.certifications.join(', ') : '';
-
-    // NEW: Products & Pricing
     const productsList = Array.isArray(profile?.products_and_services)
         ? profile.products_and_services.map((p: any) => `- ${p.name}: ${p.price} ${p.currency} (${p.description || ''})`).join('\n')
         : '';
-
-    // 6. Knowledge Base
     const faqs = Array.isArray(profile?.common_faqs) ? JSON.stringify(profile.common_faqs) : '';
     const importantNotes = profile?.important_notes || '';
     const instructions = profile?.ai_instructions || '';
 
-    // 7. Templates (Strict handling)
-    const introTemplate = profile?.response_template_intro && profile.response_template_intro.trim().length > 0
+    const introTemplate = profile?.response_template_intro?.trim()
         ? profile.response_template_intro
         : (language === 'de' ? 'Sehr geehrte Damen und Herren,' : 'Dear Sir or Madam,');
-
-    const signatureTemplate = profile?.response_template_signature && profile.response_template_signature.trim().length > 0
+    const signatureTemplate = profile?.response_template_signature?.trim()
         ? profile.response_template_signature
         : (language === 'de' ? `Mit freundlichen Grüßen,\n${companyName}` : `Best regards,\n${companyName}`);
 
-
-    // --- PRE-FETCH EMPLOYEES FOR CONTEXT ---
-    // We don't know the category yet, so we have to ask the AI to categorize AND assign in one go,
-    // Or we fetch ALL employees. Fetching all is safer for prompt context.
+    // N+1 Fix: Batch-Query für alle Mitarbeiter + Workload
     let employeeContext = "";
     let employees: any[] = [];
 
     if (profile?.id) {
-        // Fetch ALL employees for this company
-        const { data: allEmps, error } = await supabase
+        const { data: allEmps } = await supabase
             .from('employee_profiles')
             .select('id, full_name, role, skills, max_capacity')
             .eq('employer_id', profile.id);
 
         if (allEmps && allEmps.length > 0) {
-            // Get load for all
-            employees = await Promise.all(allEmps.map(async (emp) => {
-                const { count } = await supabase
-                    .from('inquiries')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('assigned_to', emp.id)
-                    .neq('status', 'closed');
-                return { ...emp, current_load: count || 0 };
+            const ids = allEmps.map((e: any) => e.id);
+            const { data: loadRows } = await supabase
+                .from('inquiries')
+                .select('assigned_to')
+                .neq('status', 'closed')
+                .in('assigned_to', ids);
+
+            const loadMap: Record<string, number> = {};
+            for (const row of loadRows || []) {
+                if (row.assigned_to) {
+                    loadMap[row.assigned_to] = (loadMap[row.assigned_to] || 0) + 1;
+                }
+            }
+
+            employees = allEmps.map((emp: any) => ({
+                ...emp,
+                current_load: loadMap[emp.id] || 0,
             }));
 
             employeeContext = JSON.stringify(employees.map(e => ({
@@ -175,7 +193,6 @@ async function analyzeInquiry(subject: string, message: string, profile: any) {
             })));
         }
     }
-
 
     const prompt = `
 You are a professional AI secretary for "${companyName}" (${industry}).
@@ -210,19 +227,31 @@ ${employeeContext}
      - Pick the best 'id' and put it in "assigned_employee_id".
      - If no one suitable, set "assigned_employee_id": null.
 
-3. **Content Only**:
-   - Output ONLY the body paragraphs.
-   - **ABSOLUTELY NO GREETING** (e.g. "Hello", "Dear...", "Servus", "Sehr geehrte...").
-   - **ABSOLUTELY NO CLOSING** (e.g. "Best regards", "Sincerely", "Mit freundlichen Grüßen", "LG").
-   - **ABSOLUTELY NO SIGNATURE** (e.g. "Your Company", "GC Wels").
-   - Start directly with the first sentence of the message.
+3. **Reply Content – STRICT RULES**:
+   - You are writing a REPLY EMAIL from "${companyName}" to the customer.
+   - Acknowledge the customer's concern or request genuinely and explain what action will be taken.
+   - Do NOT copy, repeat, or paraphrase the customer's message back to them.
+   - Write the reply in ${language === 'de' ? 'German (Deutsch)' : 'English'}.
+   - Output ONLY the body paragraphs – nothing else.
+   - **ABSOLUTELY NO GREETING** (no "Hello", "Dear...", "Servus", "Sehr geehrte...", "Golffreund", or any salutation).
+   - **ABSOLUTELY NO CLOSING** (no "Best regards", "Danke", "Gutes Spiel", "MfG", or any farewell phrase).
+   - **ABSOLUTELY NO SIGNATURE** (no company name, no team name, no contact info).
+   - Start directly with the first sentence of the actual reply.
 
 4. **Tone**: ${tone}
 
-=== TASK ===
-1. Categorize.
-2. Select Employee (if applicable).
-3. Write Email Body.
+=== YOUR TASK ===
+You are the AI secretary of "${companyName}". A customer has sent the inquiry below.
+Write a professional REPLY on behalf of ${companyName} that:
+  - Genuinely acknowledges the customer's concern or request
+  - States clearly what ${companyName} will do (investigate, fix, arrange, etc.)
+  - Does NOT repeat or paraphrase the customer's words back to them
+  - Uses a ${tone} tone, written in ${language === 'de' ? 'German (Deutsch)' : 'English'}
+
+Steps:
+1. Categorize the inquiry.
+2. Assign to the best-suited employee (check role, skills, and workload).
+3. Write the reply body_text – NO greeting, NO closing, NO signature.
 
 === INQUIRY ===
 Subject: ${subject}
@@ -236,57 +265,47 @@ Return valid JSON ONLY:
 }
 `;
 
-    try {
+    // Retry-Logik für Ollama-Calls
+    const result = await withRetry(async () => {
         const response = await fetch(`${OLLAMA_URL}/api/generate`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 model: OLLAMA_MODEL,
-                prompt: prompt,
+                prompt,
                 stream: false,
                 format: "json",
-                options: {
-                    num_ctx: OLLAMA_CTX
-                }
+                options: { num_ctx: OLLAMA_CTX }
             }),
         });
 
-        if (!response.ok) {
-            throw new Error(`Ollama API error: ${response.statusText}`);
-        }
+        if (!response.ok) throw new Error(`Ollama API error: ${response.statusText}`);
 
         const data = await response.json() as any;
-        const result = JSON.parse(data.response);
+        return JSON.parse(data.response);
+    });
 
-        let category = result.category?.toLowerCase();
-        if (!categories.includes(category)) {
-            category = 'general';
-        }
+    if (!result) return null;
 
-        // Return only the body text. The frontend/email service will add the greeting/closing.
-        const aiBody = result.body_text || result.response || '';
+    let category = result.category?.toLowerCase();
+    if (!categories.includes(category)) category = 'general';
 
-        const fullResponse = `${introTemplate}\n\n${aiBody}\n\n${signatureTemplate}`;
+    const aiBody = result.body_text || result.response || '';
+    const fullResponse = `${introTemplate}\n\n${aiBody}\n\n${signatureTemplate}`;
 
-        return {
-            category: category,
-            assigned_to: result.assigned_employee_id || null,
-            response: fullResponse
-        };
-    } catch (error) {
-        console.error('Ollama analysis failed:', error);
-        return null;
-    }
+    return {
+        category,
+        assigned_to: result.assigned_employee_id || null,
+        response: fullResponse
+    };
 }
 
 async function generateChatResponse(message: string, profile: any, history: string) {
-    // 1. Basic Company Info
     const companyName = profile?.company_name || 'our company';
     const description = profile?.company_description || '';
     const tone = profile?.preferred_tone || 'professional';
     const language = profile?.preferred_language || 'de';
 
-    // 2. Contact & Location
     const contactInfo = [
         profile?.email ? `Email: ${profile.email}` : '',
         profile?.phone ? `Phone: ${profile.phone}` : '',
@@ -294,13 +313,9 @@ async function generateChatResponse(message: string, profile: any, history: stri
         profile?.street ? `Address: ${profile.street} ${profile.street_number || ''}, ${profile.postal_code || ''} ${profile.city || ''}` : ''
     ].filter(Boolean).join('\n');
 
-    // 3. Knowledge Base
-
-    // NEW: Products & Pricing
     const productsList = Array.isArray(profile?.products_and_services)
         ? profile.products_and_services.map((p: any) => `- ${p.name}: ${p.price} ${p.currency}`).join('\n')
         : '';
-
     const businessHours = profile?.business_hours ? JSON.stringify(profile.business_hours) : '';
     const faqs = Array.isArray(profile?.common_faqs) ? JSON.stringify(profile.common_faqs) : '';
     const importantNotes = profile?.important_notes || '';
@@ -367,37 +382,28 @@ Return valid JSON ONLY:
 IMPORTANT: "action" defaults to "none" for normal responses. Only use "create_ticket" when you have ALL the data (email + description). "ticket_data" is only required when action is "create_ticket".
 `;
 
-    try {
+    // Retry-Logik für Ollama-Calls
+    return await withRetry(async () => {
         const response = await fetch(`${OLLAMA_URL}/api/generate`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 model: OLLAMA_MODEL,
-                prompt: prompt,
+                prompt,
                 stream: false,
                 format: "json",
-                options: {
-                    num_ctx: OLLAMA_CTX
-                }
+                options: { num_ctx: OLLAMA_CTX }
             }),
         });
 
-        if (!response.ok) {
-            throw new Error(`Ollama API error: ${response.statusText}`);
-        }
+        if (!response.ok) throw new Error(`Ollama API error: ${response.statusText}`);
 
         const data = await response.json() as any;
         return JSON.parse(data.response);
-    } catch (error) {
-        console.error('Ollama chat generation failed:', error);
-        return null;
-    }
+    });
 }
 
-
-
 async function ensureChatInquiry(sessionId: string, userId: string, firstMessage: string) {
-    // Check if inquiry exists
     const { data: existing } = await supabase
         .from('inquiries')
         .select('id')
@@ -406,7 +412,6 @@ async function ensureChatInquiry(sessionId: string, userId: string, firstMessage
 
     if (existing) return;
 
-    // Create new inquiry
     console.log(`Creating new inquiry for chat session ${sessionId}`);
     await supabase.from('inquiries').insert({
         user_id: userId,
@@ -424,30 +429,20 @@ async function createTicketFromChat(
     ticketData: { email: string; name: string; subject: string; message: string }
 ) {
     console.log(`Creating ticket from chat for session ${sessionId}`);
-    console.log(`  Email: ${ticketData.email}, Subject: ${ticketData.subject}`);
 
-    // 1. Update the chat_session with visitor info
     await supabase
         .from('chat_sessions')
-        .update({
-            visitor_email: ticketData.email,
-            visitor_name: ticketData.name || null
-        })
+        .update({ visitor_email: ticketData.email, visitor_name: ticketData.name || null })
         .eq('id', sessionId);
 
-    // 2. Check if a ticket already exists for this session
     const { data: existing } = await supabase
         .from('inquiries')
         .select('id')
         .eq('chat_session_id', sessionId)
         .single();
 
-    if (existing) {
-        console.log(`Ticket already exists for session ${sessionId}, skipping.`);
-        return existing.id;
-    }
+    if (existing) return existing.id;
 
-    // 3. Create the inquiry (ticket)
     const { data: inquiry, error } = await supabase
         .from('inquiries')
         .insert({
@@ -468,12 +463,10 @@ async function createTicketFromChat(
         return null;
     }
 
-    console.log(`Ticket created: ${inquiry.id}`);
     return inquiry.id;
 }
 
 async function processChatMessages() {
-    // 1. Find unprocessed user messages
     const { data: messages, error } = await supabase
         .from('chat_messages')
         .select('*, chat_sessions(user_id)')
@@ -486,15 +479,15 @@ async function processChatMessages() {
     for (const msg of messages) {
         console.log(`Processing chat message ${msg.id}: ${msg.content}`);
 
-        // Mark as processed immediately
-        await supabase.from('chat_messages').update({ is_processed: true }).eq('id', msg.id);
-
         const userId = msg.chat_sessions?.user_id;
-        if (!userId) continue;
+        if (!userId) {
+            // Mark as processed so we don't retry invalid messages
+            await supabase.from('chat_messages').update({ is_processed: true }).eq('id', msg.id);
+            continue;
+        }
 
         const profile = await fetchProfile(userId);
 
-        // Get conversation history (last 10 messages for better ticket context)
         const { data: history } = await supabase
             .from('chat_messages')
             .select('sender, content')
@@ -503,23 +496,18 @@ async function processChatMessages() {
             .order('created_at', { ascending: false })
             .limit(10);
 
-        const historyText = history ? history.reverse().map((h: any) => `${h.sender === 'user' ? 'User' : 'Assistant'}: ${h.content}`).join('\n') : '';
+        const historyText = history
+            ? history.reverse().map((h: any) => `${h.sender === 'user' ? 'User' : 'Assistant'}: ${h.content}`).join('\n')
+            : '';
 
-        // Generate response
         const result = await generateChatResponse(msg.content, profile, historyText);
 
         if (result && result.response) {
-            // Check if AI wants to create a ticket
             if (result.action === 'create_ticket' && result.ticket_data) {
                 console.log(`AI triggered ticket creation for session ${msg.session_id}`);
-                const ticketId = await createTicketFromChat(
-                    msg.session_id,
-                    userId,
-                    result.ticket_data
-                );
+                const ticketId = await createTicketFromChat(msg.session_id, userId, result.ticket_data);
 
                 if (ticketId) {
-                    // Send confirmation message with metadata for beautiful card rendering
                     await supabase.from('chat_messages').insert({
                         session_id: msg.session_id,
                         sender: 'bot',
@@ -533,7 +521,6 @@ async function processChatMessages() {
                         }
                     });
                 } else {
-                    // Ticket creation failed, send regular response
                     await supabase.from('chat_messages').insert({
                         session_id: msg.session_id,
                         sender: 'bot',
@@ -541,19 +528,24 @@ async function processChatMessages() {
                     });
                 }
             } else {
-                // Regular response (or collect_email / collect_details — just show the text)
                 await supabase.from('chat_messages').insert({
                     session_id: msg.session_id,
                     sender: 'bot',
                     content: result.response
                 });
 
-                // Check for escalation
                 if (result.escalate) {
                     console.log(`Escalating chat session ${msg.session_id} to ticket.`);
                     await ensureChatInquiry(msg.session_id, userId, msg.content);
                 }
             }
+
+            // Race Condition Fix: is_processed erst NACH erfolgreicher AI-Response setzen
+            await supabase.from('chat_messages').update({ is_processed: true }).eq('id', msg.id);
+        } else {
+            // AI failed after retries — mark as processed to avoid infinite retry loop
+            console.warn(`AI failed for message ${msg.id}, marking as processed.`);
+            await supabase.from('chat_messages').update({ is_processed: true }).eq('id', msg.id);
         }
     }
 }
@@ -593,17 +585,27 @@ async function processInquiry(inquiry: any) {
             .update({
                 ai_category: analysis.category,
                 ai_response: analysis.response,
-                assigned_to: analysis.assigned_to, // Save the assignment
-                status: 'open'
+                assigned_to: analysis.assigned_to,
+                status: 'processed',
+                updated_at: new Date().toISOString()
             })
             .eq('id', inquiry.id);
 
-        if (error) console.error('Failed to update inquiry:', error);
+        if (error) {
+            console.error('Failed to update inquiry:', error);
+            // Zurück auf open setzen, damit es erneut versucht wird
+            await supabase
+                .from('inquiries')
+                .update({ status: 'open' })
+                .eq('id', inquiry.id);
+        } else {
+            console.log(`-> Inquiry ${inquiry.id} successfully processed.`);
+        }
     } else {
-        console.log('-> Failed to analyze');
+        console.log('-> Failed to analyze after retries. Setting status to failed.');
         await supabase
             .from('inquiries')
-            .update({ status: 'open' })
+            .update({ status: 'failed', updated_at: new Date().toISOString() })
             .eq('id', inquiry.id);
     }
 }
@@ -612,30 +614,31 @@ async function main() {
     console.log('Starting Ollama Worker...');
     console.log(`Connecting to Supabase at ${SUPABASE_URL}`);
     console.log(`Using Ollama at ${OLLAMA_URL} with model ${OLLAMA_MODEL}`);
-
     console.log('Worker started. Polling for new inquiries...');
+
+    let cycleCount = 0;
 
     while (true) {
         try {
-            // console.log('Checking for new inquiries...'); // Optional: uncomment for very verbose logs
+            // Alle 12 Zyklen (~1 Min): stuck & failed Inquiries recovern
+            if (cycleCount % 12 === 0) {
+                await recoverStuckInquiries();
+                await retryFailedInquiries();
+            }
+            cycleCount++;
 
-            // Try to claim one inquiry
-            let inquiries = null;
-            const single = await claimOneInquiry();
-            if (single) inquiries = [single];
+            const inquiries = await claimInquiries();
 
-            if (inquiries && inquiries.length > 0) {
+            if (inquiries.length > 0) {
+                console.log(`Claimed ${inquiries.length} inquiries to process.`);
                 for (const inquiry of inquiries) {
                     await processInquiry(inquiry);
                 }
             }
 
-            // Process chat messages
             await processChatMessages();
 
-            if ((!inquiries || inquiries.length === 0)) {
-                // No work found, wait a bit
-                // console.log('No new inquiries found. Waiting...');
+            if (inquiries.length === 0) {
                 await new Promise(resolve => setTimeout(resolve, 5000));
             }
         } catch (error) {
