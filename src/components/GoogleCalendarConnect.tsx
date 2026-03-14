@@ -3,34 +3,34 @@ import { useGoogleLogin } from '@react-oauth/google';
 import { Button } from '@/components/ui/button';
 import { Calendar, CheckCircle, LogOut } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useVoice } from '@/contexts/VoiceContext';
 
 interface GoogleCalendarConnectProps {
-    onTokenChange: (token: string | null) => void;
+    onTokenChange?: (token: string | null) => void;
 }
 
 const GoogleCalendarConnect: React.FC<GoogleCalendarConnectProps> = ({ onTokenChange }) => {
     const { toast } = useToast();
+    const { googleToken, setGoogleToken } = useVoice();
     const [isConnected, setIsConnected] = useState(false);
 
-    // Check for existing token on mount
+    // Sync connected state from VoiceContext
     useEffect(() => {
-        const storedToken = localStorage.getItem('google_calendar_token');
-        if (storedToken) {
+        if (googleToken) {
             setIsConnected(true);
-            onTokenChange(storedToken);
+            onTokenChange?.(googleToken);
         }
-    }, [onTokenChange]);
+    }, [googleToken, onTokenChange]);
 
     const login = useGoogleLogin({
         onSuccess: (tokenResponse) => {
             console.log('Google Login Success:', tokenResponse);
             const token = tokenResponse.access_token;
 
-            // Store token
-            localStorage.setItem('google_calendar_token', token);
-            window.dispatchEvent(new Event('google_token_updated'));
+            // Store token via VoiceContext (sets token + timestamp)
+            setGoogleToken(token);
             setIsConnected(true);
-            onTokenChange(token);
+            onTokenChange?.(token);
 
             toast({
                 title: "Verbunden!",
@@ -48,9 +48,9 @@ const GoogleCalendarConnect: React.FC<GoogleCalendarConnectProps> = ({ onTokenCh
     });
 
     const logout = () => {
-        localStorage.removeItem('google_calendar_token');
+        setGoogleToken(null);
         setIsConnected(false);
-        onTokenChange(null);
+        onTokenChange?.(null);
         toast({
             title: "Getrennt",
             description: "Verbindung zu Google wurde getrennt.",

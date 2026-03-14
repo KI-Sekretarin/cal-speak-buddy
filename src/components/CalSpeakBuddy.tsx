@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useVoice } from '@/contexts/VoiceContext';
+import { transcribeAudio, executeVoiceCommand, logVoiceCommand } from '@/services/whisperService';
+import { useAuth } from '@/contexts/AuthContext';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -19,6 +21,7 @@ import {
 
 const CalSpeakBuddy = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [isRecording, setIsRecording] = useState(false);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -29,8 +32,7 @@ const CalSpeakBuddy = () => {
   const [isSending, setIsSending] = useState(false);
   const [isProcessingCommand, setIsProcessingCommand] = useState(false);
   const [commandResponse, setCommandResponse] = useState<string | null>(null);
-  const [googleToken, setGoogleToken] = useState<string | null>(null);
-  const { events, setEvents, lastUpdated, setLastUpdated } = useVoice();
+  const { events, setEvents, lastUpdated, setLastUpdated, googleToken, setGoogleToken, isTokenExpired } = useVoice();
   const [showConfirmationDialog, setShowConfirmationDialog] = useState(false);
   const [confirmationMessage, setConfirmationMessage] = useState("");
   const [pendingCommandText, setPendingCommandText] = useState<string>("");
@@ -120,29 +122,17 @@ const CalSpeakBuddy = () => {
     window.speechSynthesis.speak(utterance);
   };
 
-  // Load token from localStorage on mount
-  // Load token from localStorage on mount
+  // Token-Ablauf-Warnung (Feature 6)
   useEffect(() => {
-    const loadToken = () => {
-      const token = localStorage.getItem('google_calendar_token');
-      if (token) {
-        setGoogleToken(token);
-      }
-    };
-
-    loadToken();
-
-    // Listen for token updates from settings page
-    window.addEventListener('google_token_updated', loadToken);
-
-    // Also listen for storage events (if changed in another tab)
-    window.addEventListener('storage', loadToken);
-
-    return () => {
-      window.removeEventListener('google_token_updated', loadToken);
-      window.removeEventListener('storage', loadToken);
-    };
-  }, []);
+    if (googleToken && isTokenExpired()) {
+      toast({
+        title: "Token abgelaufen",
+        description: "Ihr Google-Token ist abgelaufen. Bitte erneut authentifizieren.",
+        variant: "destructive",
+      });
+      setGoogleToken(null);
+    }
+  }, [googleToken]);
 
   // Countdown Timer Logic
   useEffect(() => {
@@ -343,37 +333,20 @@ const CalSpeakBuddy = () => {
 
     setIsUploading(true);
     try {
-      const formData = new FormData();
-      formData.append('file', blob, 'recording.wav');
-
-      const response = await fetch('http://localhost:9000/transcribe-file', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error(`Transkription fehlgeschlagen: ${response.statusText}`);
-      }
-
-      const result = await response.json();
+      const result = await transcribeAudio(blob);
 
       setTranscription(result.text);
       setEditedTranscription(result.text);
 
       if (isNaturalMode) {
-        // Auto-Execute in Natural Mode
-        if (result.text.trim().length > 2) { // Minimal length check
-          executeCommand(result.text, false); // FALSE = NO DRY RUN = IMMEDIATE EXECUTION
+        if (result.text.trim().length > 2) {
+          executeCommand(result.text, false);
         } else {
           toast({ title: "Ignoriert", description: "Keine Sprache erkannt." });
         }
       } else {
         setIsConfirmationPending(true);
         setIsEditing(false);
-      }
-
-      // Cleanup
-      if (!isNaturalMode) {
         toast({
           title: "Transkription erfolgreich",
           description: `Audio transkribiert (${result.duration?.toFixed(1)}s)`,
@@ -407,32 +380,10 @@ const CalSpeakBuddy = () => {
       setPendingCommandText(text);
     }
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 120000);
-
     try {
       console.log(`Sende Befehl an Backend (DryRun: ${dryRun}):`, text);
 
-      const response = await fetch('http://localhost:9000/process-command', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          text: text,
-          auth_token: googleToken || localStorage.getItem('google_calendar_token'),
-          dry_run: dryRun
-        }),
-        signal: controller.signal
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
+      const data = await executeVoiceCommand(text, googleToken, dryRun);
       console.log("Backend Antwort:", data);
 
       if (data.status === 'confirmation_required') {
@@ -453,9 +404,12 @@ const CalSpeakBuddy = () => {
       if (data.status === 'success') {
         if (!silent) setCommandResponse(data.message);
 
-        // Play TTS Success Message
+        // Feature 5: Sprachbefehl loggen
+        if (!dryRun && user) {
+          logVoiceCommand(user.id, text, data.intent, data.message);
+        }
+
         if (isNaturalMode && data.message) {
-          // Clean message for TTS if needed (remove URLs etc) - Backend handles this better but frontend can strip HTML
           const cleanMsg = data.voice_message || data.message.replace(/<[^>]*>?/gm, '');
           speakText(cleanMsg);
         }
@@ -478,7 +432,6 @@ const CalSpeakBuddy = () => {
           }
         }
 
-        // Reset UI after short delay
         if (!silent) {
           setTimeout(() => {
             setIsConfirmationPending(false);
@@ -501,11 +454,9 @@ const CalSpeakBuddy = () => {
 
     } catch (error: any) {
       console.error('Fehler beim Ausführen des Befehls:', error);
-      let errorMessage = 'Fehler bei der Kommunikation mit dem Server.';
-
-      if (error.name === 'AbortError') {
-        errorMessage = 'Zeitüberschreitung: Der Server antwortet nicht rechtzeitig.';
-      }
+      const errorMessage = error.name === 'AbortError'
+        ? 'Zeitüberschreitung: Der Server antwortet nicht rechtzeitig.'
+        : 'Fehler bei der Kommunikation mit dem Server.';
 
       setCommandResponse(errorMessage);
       if (isNaturalMode) speakText("Ich konnte den Server nicht erreichen.");
@@ -516,7 +467,6 @@ const CalSpeakBuddy = () => {
       });
     } finally {
       setIsProcessingCommand(false);
-      clearTimeout(timeoutId);
     }
   };
 
