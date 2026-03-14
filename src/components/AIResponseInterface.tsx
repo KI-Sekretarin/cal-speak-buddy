@@ -26,19 +26,20 @@ export default function AIResponseInterface({ inquiryId, onUpdate, defaultRespon
   const [editedText, setEditedText] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [sendingId, setSendingId] = useState<string | null>(null);
-  const [hasInitialized, setHasInitialized] = useState(false);
+  const [responsesLoaded, setResponsesLoaded] = useState(false);
 
   useEffect(() => {
+    setResponsesLoaded(false);
+    setSuggestedResponse('');
     loadExistingResponses();
-    setHasInitialized(false); // Reset when inquiryId changes
   }, [inquiryId]);
 
+  // Nur den AI-Vorschlag einfüllen, wenn Responses geladen sind UND keine gespeicherten existieren
   useEffect(() => {
-    if (defaultResponse && !hasInitialized && existingResponses.length === 0) {
+    if (responsesLoaded && existingResponses.length === 0 && defaultResponse) {
       setSuggestedResponse(defaultResponse);
-      setHasInitialized(true);
     }
-  }, [defaultResponse, existingResponses, hasInitialized]);
+  }, [responsesLoaded, existingResponses.length, defaultResponse]);
 
   const loadExistingResponses = async () => {
     try {
@@ -52,6 +53,8 @@ export default function AIResponseInterface({ inquiryId, onUpdate, defaultRespon
       setExistingResponses(data || []);
     } catch (error) {
       console.error('Error loading responses:', error);
+    } finally {
+      setResponsesLoaded(true);
     }
   };
 
@@ -290,7 +293,7 @@ export default function AIResponseInterface({ inquiryId, onUpdate, defaultRespon
                       ai_response: null,
                       status: 'open'
                     })
-                    .eq('inquiryId', inquiryId);
+                    .eq('id', inquiryId);
 
                   if (error) throw error;
 
