@@ -35,7 +35,6 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3): Promise<T | null
 }
 
 const STUCK_TIMEOUT_MS = 5 * 60 * 1000; // 5 Minuten
-const FAILED_RETRY_AFTER_MS = 10 * 60 * 1000; // 10 Minuten
 const BATCH_SIZE = 5;
 
 async function recoverStuckInquiries() {
@@ -58,22 +57,8 @@ async function recoverStuckInquiries() {
 }
 
 async function retryFailedInquiries() {
-    const cutoff = new Date(Date.now() - FAILED_RETRY_AFTER_MS).toISOString();
-    const { data: failed, error } = await supabase
-        .from('inquiries')
-        .select('id')
-        .is('ai_category', null)
-        .eq('status', 'failed')
-        .lt('updated_at', cutoff);
-
-    if (error || !failed || failed.length === 0) return;
-
-    console.log(`Retrying ${failed.length} previously failed inquiries...`);
-    const ids = failed.map((s: any) => s.id);
-    await supabase
-        .from('inquiries')
-        .update({ status: 'open' })
-        .in('id', ids);
+    // Inquiries that failed analysis have status 'open' with ai_category null
+    // They are automatically picked up again by claimInquiries() — no separate retry needed
 }
 
 async function claimInquiries(): Promise<any[]> {
@@ -586,7 +571,7 @@ async function processInquiry(inquiry: any) {
                 ai_category: analysis.category,
                 ai_response: analysis.response,
                 assigned_to: analysis.assigned_to,
-                status: 'processed',
+                status: 'in_progress',
                 updated_at: new Date().toISOString()
             })
             .eq('id', inquiry.id);
@@ -605,7 +590,7 @@ async function processInquiry(inquiry: any) {
         console.log('-> Failed to analyze after retries. Setting status to failed.');
         await supabase
             .from('inquiries')
-            .update({ status: 'failed', updated_at: new Date().toISOString() })
+            .update({ status: 'open', updated_at: new Date().toISOString() })
             .eq('id', inquiry.id);
     }
 }
