@@ -1,0 +1,23 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Frontend (Vite + React)",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 5173
+    },
+    {
+      "name": "Whisper Server (FastAPI Port 9000)",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["services/whisper-server/start.sh"],
+      "port": 9000
+    },
+    {
+      "name": "Ollama Worker (Node.js Background)",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "services/ollama-worker", "start"],
+      "port": 3000
+    }
+  ]
+}
